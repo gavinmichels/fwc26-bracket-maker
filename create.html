@@ -7,6 +7,21 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/main.css" />
+  <style>
+    .rank-badge {
+      display:inline-flex; align-items:center; justify-content:center;
+      width:24px; height:24px; border-radius:50%;
+      font-size:10px; font-weight:700; font-family:'Inter',sans-serif;
+      flex-shrink:0; line-height:1; margin-top:4px;
+    }
+    .rank-badge--favorite  { background:rgba(255,255,255,0.25); color:#fff; border:1px solid rgba(255,255,255,0.4); }
+    .rank-badge--underdog  { background:#E67E22; color:#fff; }
+    .rank-badge--even      { background:rgba(255,255,255,0.2); color:#fff; }
+    .rank-badge--dark      { background:#555; color:#fff; }
+    .rank-pts-hint {
+      font-size:0.68rem; opacity:0.7; margin-top:2px; font-weight:500;
+    }
+  </style>
 </head>
 <body class="form-page">
 
@@ -150,6 +165,22 @@
     };
 
     // ─── Step 2: Matches ─────────────────────────────────────────────────────
+    function rankBadgeCreate(teamName, opponentName, isSelected) {
+      const rank = TEAM_RANK[teamName] ?? "?";
+      const role = getTeamRole(teamName, opponentName);
+      const badgeClass = isSelected
+        ? (role === "underdog" ? "rank-badge rank-badge--underdog" : "rank-badge rank-badge--favorite")
+        : "rank-badge rank-badge--dark";
+      return `<span class="${badgeClass}">${rank}</span>`;
+    }
+
+    function pointsHint(teamName, opponentName) {
+      const role = getTeamRole(teamName, opponentName);
+      return role === "underdog"
+        ? `<span class="rank-pts-hint">⭐ +5 if correct (underdog!)</span>`
+        : `<span class="rank-pts-hint">+3 if correct</span>`;
+    }
+
     function renderMatch() {
       const match = GROUP_STAGE_MATCHES[currentMatchIndex];
       const total = TOTAL;
@@ -184,6 +215,8 @@
                     style="${existingPick === "home" ? `--team-accent:${accentColor};` : ""}">
               <img class="team-flag-img" src="${match.home.flag}" alt="${match.home.name}" />
               <span class="team-name">${match.home.name}</span>
+              ${rankBadgeCreate(match.home.name, match.away.name, existingPick === "home")}
+              ${pointsHint(match.home.name, match.away.name)}
               <span class="team-win-label" style="background:${accentColor};">WINNER</span>
             </button>
 
@@ -192,6 +225,7 @@
               <button class="draw-btn ${existingPick === "draw" ? "draw-btn--selected" : ""}"
                       onclick="pickTeam('draw')">
                 DRAW
+                <span class="rank-pts-hint">+3 if correct</span>
               </button>
             </div>
 
@@ -200,6 +234,8 @@
                     style="${existingPick === "away" ? `--team-accent:${accentColor};` : ""}">
               <img class="team-flag-img" src="${match.away.flag}" alt="${match.away.name}" />
               <span class="team-name">${match.away.name}</span>
+              ${rankBadgeCreate(match.away.name, match.home.name, existingPick === "away")}
+              ${pointsHint(match.away.name, match.home.name)}
               <span class="team-win-label" style="background:${accentColor};">WINNER</span>
             </button>
           </div>

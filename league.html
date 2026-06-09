@@ -7,6 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/main.css" />
+  <style>
+    .league-accuracy {
+      font-size:0.7rem; opacity:0.55; font-weight:500;
+      display:block; text-align:right; margin-top:1px;
+    }
+  </style>
 </head>
 <body class="league-page">
 
@@ -49,14 +55,19 @@
         const brackets = [];
         bracketsSnap.forEach(d => {
           const data = d.data();
-          let correct = 0;
+          let correct = 0, points = 0;
           GROUP_STAGE_MATCHES.forEach(m => {
-            if (outcomes[m.id] && data.picks[m.id] === outcomes[m.id]) correct++;
+            const outcome = outcomes[m.id];
+            const pick = data.picks ? data.picks[m.id] : undefined;
+            if (outcome && pick === outcome) correct++;
+            points += getMatchPoints(m, pick, outcome);
           });
-          brackets.push({ id: d.id, ...data, correct });
+          const played = GROUP_STAGE_MATCHES.filter(m => outcomes[m.id]).length;
+          const accuracy = played > 0 ? Math.round((correct / played) * 100) : 0;
+          brackets.push({ id: d.id, ...data, correct, points, accuracy });
         });
 
-        brackets.sort((a, b) => b.correct - a.correct);
+        brackets.sort((a, b) => b.points - a.points);
         render(brackets, playedCount, outcomes);
       } catch(e) {
         root.innerHTML = `<p class="error-msg" style="display:block; text-align:center;">Could not load standings.</p>`;
@@ -92,8 +103,9 @@
               <span class="league-owner">${b.owner}</span>
             </div>
             <div class="league-score">
-              <span class="league-pts">${b.correct}</span>
+              <span class="league-pts">${b.points}</span>
               <span class="league-pts-label">pts</span>
+              <span class="league-accuracy">${b.accuracy}%</span>
             </div>
           </div>
         `;

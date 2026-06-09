@@ -293,3 +293,38 @@ const GROUP_STAGE_MATCHES = [
     home: { name: "Jordan",               flag: FLAG("jo") },
     away: { name: "Argentina",            flag: FLAG("ar") } },
 ];
+
+const TEAM_RANK = {
+  "Czechia": 41, "Mexico": 15, "South Africa": 60, "South Korea": 25,
+  "Bosnia & Herzegovina": 65, "Canada": 30, "Qatar": 55, "Switzerland": 19,
+  "Brazil": 6, "Haiti": 83, "Morocco": 8, "Scotland": 43,
+  "Australia": 27, "Paraguay": 40, "Turkey": 22, "United States": 16,
+  "Curacao": 82, "Curaçao": 82, "Ecuador": 23, "Germany": 10, "Ivory Coast": 34,
+  "Japan": 18, "Netherlands": 7, "Sweden": 38, "Tunisia": 44,
+  "Belgium": 9, "Egypt": 29, "Iran": 21, "New Zealand": 85,
+  "Cape Verde": 69, "Saudi Arabia": 61, "Spain": 2, "Uruguay": 17,
+  "France": 1, "Iraq": 57, "Norway": 31, "Senegal": 14,
+  "Algeria": 28, "Argentina": 3, "Austria": 24, "Jordan": 63,
+  "Colombia": 13, "DR Congo": 46, "Portugal": 5, "Uzbekistan": 50,
+  "Croatia": 11, "England": 4, "Ghana": 74, "Panama": 33
+};
+
+// Returns points for a single match pick
+// +3 for correct draw, +3 for correct win (favorite), +5 for correct win (underdog)
+function getMatchPoints(match, pick, outcome) {
+  if (!outcome || pick !== outcome) return 0;
+  if (pick === "draw") return 3;
+  const pickedName = pick === "home" ? match.home.name : match.away.name;
+  const otherName  = pick === "home" ? match.away.name : match.home.name;
+  const pickedRank = TEAM_RANK[pickedName] ?? 50;
+  const otherRank  = TEAM_RANK[otherName]  ?? 50;
+  return pickedRank > otherRank ? 5 : 3;
+}
+
+// Returns "underdog" | "favorite" | "even" for a given team in a match
+function getTeamRole(teamName, opponentName) {
+  const r1 = TEAM_RANK[teamName]   ?? 50;
+  const r2 = TEAM_RANK[opponentName] ?? 50;
+  if (r1 === r2) return "even";
+  return r1 > r2 ? "underdog" : "favorite";
+}

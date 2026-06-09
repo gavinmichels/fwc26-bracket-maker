@@ -7,6 +7,22 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/main.css" />
+  <style>
+    .team-name-ranked { display:inline-flex; align-items:center; gap:4px; }
+    .rank-badge {
+      display:inline-flex; align-items:center; justify-content:center;
+      width:22px; height:22px; border-radius:50%;
+      font-size:10px; font-weight:700; font-family:'Inter',sans-serif;
+      flex-shrink:0; line-height:1;
+    }
+    .rank-badge--favorite  { background:#1A5276; color:#fff; }
+    .rank-badge--underdog  { background:#E67E22; color:#fff; }
+    .rank-badge--even      { background:#555; color:#fff; }
+    .pts-chip {
+      font-size:0.72rem; font-weight:700; padding:2px 7px;
+      border-radius:10px; background:rgba(0,0,0,0.07);
+    }
+  </style>
 </head>
 <body class="bracket-page">
 
@@ -59,23 +75,34 @@
         document.querySelector(".bracket-page").style.setProperty("--accent", color);
 
         // Score computation
-        let correct = 0, total = 0;
+        let correct = 0, total = 0, points = 0;
         GROUP_STAGE_MATCHES.forEach(m => {
           const outcome = outcomes[m.id];
           const pick = data.picks[m.id];
           if (outcome) {
             total++;
             if (pick === outcome) correct++;
+            points += getMatchPoints(m, pick, outcome);
           }
         });
+        const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
 
-        renderBracket(data, outcomes, correct, total, color);
+        renderBracket(data, outcomes, correct, total, points, accuracy, color);
       } catch(e) {
         root.innerHTML = `<div class="form-card"><p class="error-msg" style="display:block;">Failed to load. Try again.</p></div>`;
       }
     }
 
-    function renderBracket(data, outcomes, correct, total, color) {
+    function rankBadge(teamName, opponentName) {
+      const rank = TEAM_RANK[teamName] ?? "?";
+      const role = getTeamRole(teamName, opponentName);
+      const badgeClass = role === "underdog" ? "rank-badge rank-badge--underdog"
+                       : role === "favorite" ? "rank-badge rank-badge--favorite"
+                       : "rank-badge rank-badge--even";
+      return `<span class="${badgeClass}" title="FIFA rank #${rank}">${rank}</span>`;
+    }
+
+    function renderBracket(data, outcomes, correct, total, points, accuracy, color) {
       const groups = ["A","B","C","D","E","F","G","H","I","J","K","L"];
 
       const groupSections = groups.map(g => {
@@ -86,6 +113,7 @@
           const isScored = !!outcome;
           const isCorrect = isScored && pick === outcome;
           const isWrong   = isScored && pick !== outcome;
+          const pts = getMatchPoints(m, pick, outcome);
 
           const pickLabel = !pick ? "—" :
             pick === "draw" ? "Draw" :
@@ -98,15 +126,18 @@
           return `
             <div class="match-row ${isCorrect ? "match-row--correct" : ""} ${isWrong ? "match-row--wrong" : ""}">
               <div class="match-row-teams">
-                <img class="match-row-flag" src="${m.home.flag}" alt="${m.home.name}" /><span>${m.home.name}</span>
+                <img class="match-row-flag" src="${m.home.flag}" alt="${m.home.name}" />
+                <span class="team-name-ranked">${m.home.name}${rankBadge(m.home.name, m.away.name)}</span>
                 <span class="match-row-vs">vs</span>
-                <img class="match-row-flag" src="${m.away.flag}" alt="${m.away.name}" /><span>${m.away.name}</span>
+                <img class="match-row-flag" src="${m.away.flag}" alt="${m.away.name}" />
+                <span class="team-name-ranked">${m.away.name}${rankBadge(m.away.name, m.home.name)}</span>
               </div>
               <div class="match-row-picks">
                 <span class="pick-chip ${isCorrect ? "pick-chip--correct" : ""} ${isWrong ? "pick-chip--wrong" : ""}">
                   ${isCorrect ? "✓" : isWrong ? "✗" : ""} ${pickLabel}
                 </span>
                 ${isScored ? `<span class="result-chip">Result: ${resultLabel}</span>` : ""}
+                ${isCorrect ? `<span class="pts-chip" style="color:${color};">+${pts}pts</span>` : ""}
               </div>
             </div>
           `;
@@ -129,8 +160,8 @@
             <h1 class="bracket-name" style="color:${color};">${data.bracketName}</h1>
           </div>
           <div class="bracket-score-block">
-            <div class="score-big" style="color:${color};">${correct}</div>
-            <div class="score-label">correct of ${total} played</div>
+            <div class="score-big" style="color:${color};">${points}</div>
+            <div class="score-label">${correct}/${total} correct &nbsp;·&nbsp; ${accuracy}%</div>
             <div class="score-goals-guess">Goals guess: <strong>${data.totalGoalsGuess}</strong></div>
           </div>
         </div>
