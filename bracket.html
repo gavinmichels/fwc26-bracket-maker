@@ -162,7 +162,8 @@
           <div class="bracket-score-block">
             <div class="score-big" style="color:${color};">${points}</div>
             <div class="score-label">${correct}/${total} correct &nbsp;·&nbsp; ${accuracy}%</div>
-            <div class="score-goals-guess">Goals: <strong>${data.totalGoalsGuess}</strong> &nbsp;·&nbsp; 🟨 <strong>${data.yellowCardsGuess ?? "—"}</strong></div>
+            <div class="score-goals-guess">Goals: <strong>${data.totalGoalsGuess ?? "—"}</strong></div>
+            <div class="score-goals-guess">🟨 <strong>${data.yellowCardsGuess ?? "—"}</strong> &nbsp;·&nbsp; 🟥 <strong>${data.redCardsGuess ?? "—"}</strong></div>
           </div>
         </div>
 

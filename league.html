@@ -8,11 +8,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/main.css" />
   <style>
+    .league-row,
+    .league-table-header {
+      grid-template-columns: 36px 12px 1fr 110px !important;
+    }
     .league-score {
       display: flex;
       flex-direction: row;
-      align-items: center;
-      gap: 14px;
+      align-items: flex-end;
+      justify-content: flex-end;
+      gap: 18px;
     }
     .league-stat {
       display: flex;
@@ -21,21 +26,17 @@
       line-height: 1;
     }
     .league-stat-value {
-      font-size: 1.2rem;
-      font-weight: 700;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem;
       line-height: 1;
     }
     .league-stat-label {
-      font-size: 0.58rem;
-      font-weight: 600;
-      opacity: 0.4;
+      font-size: 0.55rem;
+      font-weight: 700;
+      opacity: 0.38;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.07em;
       margin-top: 3px;
-      align-self: flex-end;
-    }
-    .league-table-header span:last-child {
-      text-align: right;
     }
   </style>
 </head>
@@ -154,8 +155,7 @@
             <span>#</span>
             <span></span>
             <span>Bracket</span>
-            <span></span>
-            <span style="text-align:right;">Score</span>
+            <span style="text-align:right;">PTS &nbsp; ACC</span>
           </div>
           ${rows}
         </div>
