@@ -12,32 +12,30 @@
       display: flex;
       flex-direction: row;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
     }
     .league-stat {
       display: flex;
       flex-direction: column;
       align-items: flex-end;
+      line-height: 1;
     }
     .league-stat-value {
-      font-size: 1.15rem;
+      font-size: 1.2rem;
       font-weight: 700;
       line-height: 1;
     }
     .league-stat-label {
-      font-size: 0.62rem;
+      font-size: 0.58rem;
       font-weight: 600;
-      opacity: 0.45;
+      opacity: 0.4;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-top: 2px;
+      letter-spacing: 0.05em;
+      margin-top: 3px;
+      align-self: flex-end;
     }
     .league-table-header span:last-child {
       text-align: right;
-    }
-    .league-correct-detail {
-      font-size: 0.65rem; opacity: 0.45; font-weight: 500;
-      display: block; text-align: right; margin-top: 2px;
     }
   </style>
 </head>
@@ -134,11 +132,9 @@
                 <span class="league-stat-value">${b.points}</span>
                 <span class="league-stat-label">PTS</span>
               </div>
-              <div class="league-stat-divider"></div>
               <div class="league-stat">
                 <span class="league-stat-value">${b.accuracy}%</span>
                 <span class="league-stat-label">ACC</span>
-                ${isMe ? `<span class="league-correct-detail">${b.correct} correct</span>` : ""}
               </div>
             </div>
           </div>
@@ -149,7 +145,7 @@
 
       root.innerHTML = `
         <div class="league-hero">
-          <h1 class="league-title">🏆 Family League 🏆</h1>
+          <h1 class="league-title">🏆 Family League</h1>
           <p class="league-subtitle">${played} of 72 group stage matches played</p>
         </div>
 

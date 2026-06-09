@@ -161,9 +161,8 @@
     function inlineRank(teamName, opponentName) {
       const rank = TEAM_RANK[teamName] ?? "?";
       const role = getTeamRole(teamName, opponentName);
-      const color = role === "underdog" ? "#9B72CF" : role === "favorite" ? "#5BA4CF" : "#888";
-      const label = role === "underdog" ? `#${rank} ⭐` : `#${rank}`;
-      return `<span class="inline-rank-badge" style="background:${color};">${label}</span>`;
+      const color = role === "underdog" ? "#9B72CF" : role === "favorite" ? "#4FC3F7" : "#888";
+      return `<span class="inline-rank-badge" style="background:${color};">#${rank}</span>`;
     }
 
     function renderMatch() {
@@ -259,14 +258,21 @@
       root.innerHTML = `
         <div class="form-card">
           <div class="form-card-icon" style="color:${bracketInfo.color};">⚽</div>
-          <h2 class="form-card-title">One Last Pick</h2>
-          <p class="form-card-sub">How many total goals will be scored across all 72 group stage matches?</p>
+          <h2 class="form-card-title">Two Last Picks</h2>
+          <p class="form-card-sub">Almost done — two tiebreaker guesses for the group stage.</p>
 
           <div class="field-group">
             <label class="field-label" for="totalGoals">Total Goals (Group Stage)</label>
             <input class="field-input field-input--large" type="number" id="totalGoals" 
                    placeholder="e.g. 124" min="0" max="400" />
             <span class="field-hint">The average is around 120–140 goals in a 48-team group stage.</span>
+          </div>
+
+          <div class="field-group" style="margin-top:1.25rem;">
+            <label class="field-label" for="yellowCards">Total Yellow Cards (Group Stage)</label>
+            <input class="field-input field-input--large" type="number" id="yellowCards"
+                   placeholder="e.g. 220" min="0" max="800" />
+            <span class="field-hint">Typically around 200–260 yellow cards across 72 matches.</span>
           </div>
 
           <div id="goalsError" class="error-msg" style="display:none;"></div>
@@ -290,11 +296,17 @@
 
     window.submitBracket = async function() {
       const goals = parseInt(document.getElementById("totalGoals").value);
+      const yellows = parseInt(document.getElementById("yellowCards").value);
       const errEl = document.getElementById("goalsError");
       errEl.style.display = "none";
 
       if (isNaN(goals) || goals < 0 || goals > 400) {
         errEl.textContent = "Please enter a valid number of goals (0–400).";
+        errEl.style.display = "block";
+        return;
+      }
+      if (isNaN(yellows) || yellows < 0 || yellows > 800) {
+        errEl.textContent = "Please enter a valid number of yellow cards (0–800).";
         errEl.style.display = "block";
         return;
       }
@@ -308,6 +320,7 @@
           ...bracketInfo,
           picks,
           totalGoalsGuess: goals,
+          yellowCardsGuess: yellows,
           score: 0,
           createdAt: Date.now(),
           stage: "group"

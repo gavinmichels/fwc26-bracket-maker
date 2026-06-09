@@ -15,7 +15,7 @@
       font-size:10px; font-weight:700; font-family:'Inter',sans-serif;
       flex-shrink:0; line-height:1;
     }
-    .rank-badge--favorite  { background:#5BA4CF; color:#fff; }
+    .rank-badge--favorite  { background:#4FC3F7; color:#fff; }
     .rank-badge--underdog  { background:#9B72CF; color:#fff; }
     .rank-badge--even      { background:#888; color:#fff; }
     .pts-chip {
@@ -162,7 +162,7 @@
           <div class="bracket-score-block">
             <div class="score-big" style="color:${color};">${points}</div>
             <div class="score-label">${correct}/${total} correct &nbsp;·&nbsp; ${accuracy}%</div>
-            <div class="score-goals-guess">Goals guess: <strong>${data.totalGoalsGuess}</strong></div>
+            <div class="score-goals-guess">Goals: <strong>${data.totalGoalsGuess}</strong> &nbsp;·&nbsp; 🟨 <strong>${data.yellowCardsGuess ?? "—"}</strong></div>
           </div>
         </div>
 
