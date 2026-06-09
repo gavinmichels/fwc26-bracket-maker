@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — WC2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body class="admin-page form-page">
+
+  <div class="form-bg"></div>
+
+  <header class="form-header">
+    <a href="index.html" class="back-link">← Home</a>
+    <span class="form-header-title">⚙️ Admin Panel</span>
+  </header>
+
+  <main class="form-main">
+    <div id="adminGate">
+      <div class="form-card">
+        <div class="form-card-icon">⚙️</div>
+        <h2 class="form-card-title">Admin Access</h2>
+        <p class="form-card-sub">Enter the admin password to manage match outcomes.</p>
+        <div class="field-group">
+          <label class="field-label" for="adminPw">Admin Password</label>
+          <input class="field-input" type="password" id="adminPw" placeholder="Admin password" />
+        </div>
+        <div id="adminGateError" class="error-msg" style="display:none;"></div>
+        <button class="btn btn-primary btn-full" onclick="unlockAdmin()">Enter</button>
+      </div>
+    </div>
+
+    <div id="adminPanel" style="display:none;">
+      <div class="admin-header-card">
+        <h2 class="admin-title">Match Outcomes</h2>
+        <p class="admin-sub">Select the result for each match. All brackets score automatically.</p>
+        <div class="admin-save-bar">
+          <span id="saveStatus" class="save-status"></span>
+          <button class="btn btn-primary" onclick="saveOutcomes()">Save All Outcomes</button>
+        </div>
+      </div>
+
+      <div id="adminMatchList"></div>
+    </div>
+  </main>
+
+  <script src="data/matches.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { FIREBASE_CONFIG } from "./js/firebase-config.js";
+
+    const app = initializeApp(FIREBASE_CONFIG);
+    const db = getFirestore(app);
+
+    // !! Change this to your desired admin password !!
+    const ADMIN_PASSWORD = "James_Rodriguez";
+
+    let outcomes = {};
+
+    window.unlockAdmin = function() {
+      const pw = document.getElementById("adminPw").value;
+      if (pw !== ADMIN_PASSWORD) {
+        const err = document.getElementById("adminGateError");
+        err.textContent = "Incorrect password.";
+        err.style.display = "block";
+        return;
+      }
+      document.getElementById("adminGate").style.display = "none";
+      document.getElementById("adminPanel").style.display = "block";
+      loadOutcomes();
+    };
+
+    async function loadOutcomes() {
+      const snap = await getDoc(doc(db, "admin", "outcomes"));
+      outcomes = snap.exists() ? snap.data().results || {} : {};
+      renderMatches();
+    }
+
+    function renderMatches() {
+      const groups = ["A","B","C","D","E","F","G","H","I","J","K","L"];
+      const container = document.getElementById("adminMatchList");
+
+      container.innerHTML = groups.map(g => {
+        const matches = GROUP_STAGE_MATCHES.filter(m => m.group === g);
+        const rows = matches.map(m => {
+          const cur = outcomes[m.id];
+          return `
+            <div class="admin-match-row">
+              <div class="admin-match-teams">
+                <span>${m.home.flag} ${m.home.name}</span>
+                <span class="admin-vs">vs</span>
+                <span>${m.away.flag} ${m.away.name}</span>
+              </div>
+              <div class="admin-result-btns">
+                <button class="admin-result-btn ${cur === "home" ? "admin-result-btn--active" : ""}"
+                        onclick="setOutcome(${m.id}, 'home', this)">
+                  ${m.home.name} Wins
+                </button>
+                <button class="admin-result-btn admin-result-btn--draw ${cur === "draw" ? "admin-result-btn--active" : ""}"
+                        onclick="setOutcome(${m.id}, 'draw', this)">
+                  Draw
+                </button>
+                <button class="admin-result-btn ${cur === "away" ? "admin-result-btn--active" : ""}"
+                        onclick="setOutcome(${m.id}, 'away', this)">
+                  ${m.away.name} Wins
+                </button>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        return `
+          <div class="group-section">
+            <div class="group-header" style="border-left:3px solid #1A5276;">Group ${g}</div>
+            ${rows}
+          </div>
+        `;
+      }).join("");
+    }
+
+    window.setOutcome = function(matchId, result, btn) {
+      outcomes[matchId] = result;
+      // Update button states in this row
+      const row = btn.closest(".admin-result-btns");
+      row.querySelectorAll(".admin-result-btn").forEach(b => b.classList.remove("admin-result-btn--active"));
+      btn.classList.add("admin-result-btn--active");
+    };
+
+    window.saveOutcomes = async function() {
+      const status = document.getElementById("saveStatus");
+      status.textContent = "Saving…";
+      try {
+        await setDoc(doc(db, "admin", "outcomes"), { results: outcomes });
+        status.textContent = "✓ Saved!";
+        setTimeout(() => status.textContent = "", 3000);
+      } catch(e) {
+        status.textContent = "✗ Save failed.";
+      }
+    };
+  </script>
+</body>
+</html>

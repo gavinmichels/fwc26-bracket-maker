@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>League Standings — WC2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body class="league-page">
+
+  <div class="form-bg"></div>
+
+  <header class="form-header">
+    <a href="index.html" class="back-link">← Home</a>
+    <span class="form-header-title">League Standings</span>
+  </header>
+
+  <main class="league-main">
+    <div class="league-container" id="leagueRoot">
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Loading standings…</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="data/matches.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { FIREBASE_CONFIG } from "./js/firebase-config.js";
+
+    const app = initializeApp(FIREBASE_CONFIG);
+    const db = getFirestore(app);
+    const root = document.getElementById("leagueRoot");
+
+    async function loadLeague() {
+      try {
+        const [bracketsSnap, adminSnap] = await Promise.all([
+          getDocs(collection(db, "brackets")),
+          getDoc(doc(db, "admin", "outcomes"))
+        ]);
+
+        const outcomes = adminSnap.exists() ? adminSnap.data().results || {} : {};
+        const playedCount = Object.keys(outcomes).length;
+
+        const brackets = [];
+        bracketsSnap.forEach(d => {
+          const data = d.data();
+          let correct = 0;
+          GROUP_STAGE_MATCHES.forEach(m => {
+            if (outcomes[m.id] && data.picks[m.id] === outcomes[m.id]) correct++;
+          });
+          brackets.push({ id: d.id, ...data, correct });
+        });
+
+        brackets.sort((a, b) => b.correct - a.correct);
+        render(brackets, playedCount, outcomes);
+      } catch(e) {
+        root.innerHTML = `<p class="error-msg" style="display:block; text-align:center;">Could not load standings.</p>`;
+      }
+    }
+
+    function render(brackets, playedCount, outcomes) {
+      if (brackets.length === 0) {
+        root.innerHTML = `
+          <div class="league-empty">
+            <div class="league-empty-icon">🏆</div>
+            <h2>No brackets yet</h2>
+            <p>Be the first to create a bracket!</p>
+            <a href="create.html" class="btn btn-primary">Create Bracket →</a>
+          </div>
+        `;
+        return;
+      }
+
+      const activeBracketId = sessionStorage.getItem("activeBracketId");
+
+      const rows = brackets.map((b, i) => {
+        const isMe = b.id === activeBracketId;
+        const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`;
+        return `
+          <div class="league-row ${isMe ? "league-row--me" : ""}" 
+               onclick="openBracket('${b.id}')"
+               style="${isMe ? `border-left: 3px solid ${b.color || "#1A5276"};` : ""}">
+            <div class="league-rank">${medal}</div>
+            <div class="league-color-dot" style="background:${b.color || "#1A5276"};"></div>
+            <div class="league-info">
+              <span class="league-name">${b.bracketName}</span>
+              <span class="league-owner">${b.owner}</span>
+            </div>
+            <div class="league-score">
+              <span class="league-pts">${b.correct}</span>
+              <span class="league-pts-label">pts</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      const played = GROUP_STAGE_MATCHES.filter(m => outcomes[m.id]).length;
+
+      root.innerHTML = `
+        <div class="league-hero">
+          <h1 class="league-title">🏆 Family League</h1>
+          <p class="league-subtitle">${played} of 72 group stage matches played</p>
+        </div>
+
+        <div class="league-table">
+          <div class="league-table-header">
+            <span>#</span>
+            <span style="grid-column:2/5;">Bracket</span>
+            <span>Score</span>
+          </div>
+          ${rows}
+        </div>
+
+        <p class="league-note">Tap any bracket to view their picks.</p>
+        <div class="league-actions">
+          <a href="create.html" class="btn btn-primary">+ New Bracket</a>
+          <a href="load.html" class="btn btn-secondary">Load Mine</a>
+        </div>
+      `;
+    }
+
+    window.openBracket = function(id) {
+      sessionStorage.setItem("activeBracketId", id);
+      window.location.href = "bracket.html";
+    };
+
+    loadLeague();
+  </script>
+</body>
+</html>

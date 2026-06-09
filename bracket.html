@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Bracket — WC2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body class="bracket-page">
+
+  <div class="form-bg"></div>
+
+  <header class="form-header" id="bracketHeader">
+    <a href="index.html" class="back-link">← Home</a>
+    <span class="form-header-title" id="headerOwner">My Bracket</span>
+    <a href="league.html" class="league-btn-small">League →</a>
+  </header>
+
+  <main class="bracket-main" id="bracketRoot">
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Loading your bracket…</p>
+    </div>
+  </main>
+
+  <script src="data/matches.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { FIREBASE_CONFIG } from "./js/firebase-config.js";
+
+    const app = initializeApp(FIREBASE_CONFIG);
+    const db = getFirestore(app);
+    const root = document.getElementById("bracketRoot");
+
+    const bracketId = sessionStorage.getItem("activeBracketId");
+    if (!bracketId) {
+      window.location.href = "index.html";
+    }
+
+    async function load() {
+      try {
+        const snap = await getDoc(doc(db, "brackets", bracketId));
+        if (!snap.exists()) {
+          root.innerHTML = `<div class="form-card"><p class="error-msg" style="display:block;">Bracket not found.</p><a href="index.html" class="btn btn-primary" style="margin-top:1rem;">← Home</a></div>`;
+          return;
+        }
+
+        const data = snap.data();
+        const color = data.color || "#1A5276";
+
+        // Load admin outcomes
+        const adminSnap = await getDoc(doc(db, "admin", "outcomes"));
+        const outcomes = adminSnap.exists() ? adminSnap.data().results || {} : {};
+
+        document.getElementById("headerOwner").textContent = data.bracketName;
+        document.querySelector(".bracket-page").style.setProperty("--accent", color);
+
+        // Score computation
+        let correct = 0, total = 0;
+        GROUP_STAGE_MATCHES.forEach(m => {
+          const outcome = outcomes[m.id];
+          const pick = data.picks[m.id];
+          if (outcome) {
+            total++;
+            if (pick === outcome) correct++;
+          }
+        });
+
+        renderBracket(data, outcomes, correct, total, color);
+      } catch(e) {
+        root.innerHTML = `<div class="form-card"><p class="error-msg" style="display:block;">Failed to load. Try again.</p></div>`;
+      }
+    }
+
+    function renderBracket(data, outcomes, correct, total, color) {
+      const groups = ["A","B","C","D","E","F","G","H","I","J","K","L"];
+
+      const groupSections = groups.map(g => {
+        const matches = GROUP_STAGE_MATCHES.filter(m => m.group === g);
+        const rows = matches.map(m => {
+          const pick = data.picks[m.id];
+          const outcome = outcomes[m.id];
+          const isScored = !!outcome;
+          const isCorrect = isScored && pick === outcome;
+          const isWrong   = isScored && pick !== outcome;
+
+          const pickLabel = !pick ? "—" :
+            pick === "draw" ? "Draw" :
+            pick === "home" ? m.home.name : m.away.name;
+
+          const resultLabel = !outcome ? "Pending" :
+            outcome === "draw" ? "Draw" :
+            outcome === "home" ? m.home.name : m.away.name;
+
+          return `
+            <div class="match-row ${isCorrect ? "match-row--correct" : ""} ${isWrong ? "match-row--wrong" : ""}">
+              <div class="match-row-teams">
+                <span>${m.home.flag} ${m.home.name}</span>
+                <span class="match-row-vs">vs</span>
+                <span>${m.away.flag} ${m.away.name}</span>
+              </div>
+              <div class="match-row-picks">
+                <span class="pick-chip ${isCorrect ? "pick-chip--correct" : ""} ${isWrong ? "pick-chip--wrong" : ""}">
+                  ${isCorrect ? "✓" : isWrong ? "✗" : ""} ${pickLabel}
+                </span>
+                ${isScored ? `<span class="result-chip">Result: ${resultLabel}</span>` : ""}
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        return `
+          <div class="group-section">
+            <div class="group-header" style="border-left: 3px solid ${color};">
+              Group ${g}
+            </div>
+            ${rows}
+          </div>
+        `;
+      }).join("");
+
+      root.innerHTML = `
+        <div class="bracket-hero" style="background: linear-gradient(135deg, ${color}22, ${color}08);">
+          <div class="bracket-hero-info">
+            <div class="bracket-owner-tag">⚽ ${data.owner}</div>
+            <h1 class="bracket-name" style="color:${color};">${data.bracketName}</h1>
+          </div>
+          <div class="bracket-score-block">
+            <div class="score-big" style="color:${color};">${correct}</div>
+            <div class="score-label">correct of ${total} played</div>
+            <div class="score-goals-guess">Goals guess: <strong>${data.totalGoalsGuess}</strong></div>
+          </div>
+        </div>
+
+        <div class="bracket-tabs" id="bracketTabs">
+          <button class="bracket-tab bracket-tab--active" onclick="switchTab('group', this)" style="--tab-color:${color}">Group Stage</button>
+          <button class="bracket-tab bracket-tab--disabled" title="Available after group stage">Round of 32</button>
+          <button class="bracket-tab bracket-tab--disabled" title="Available after group stage">Knockout</button>
+        </div>
+
+        <div class="bracket-content" id="bracketContent">
+          <div class="groups-grid">
+            ${groupSections}
+          </div>
+        </div>
+      `;
+    }
+
+    window.switchTab = function(tab, el) {
+      document.querySelectorAll(".bracket-tab").forEach(t => t.classList.remove("bracket-tab--active"));
+      el.classList.add("bracket-tab--active");
+    };
+
+    load();
+  </script>
+</body>
+</html>

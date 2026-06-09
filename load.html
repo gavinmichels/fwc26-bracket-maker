@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Load Bracket — WC2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body class="form-page">
+
+  <div class="form-bg"></div>
+
+  <header class="form-header">
+    <a href="index.html" class="back-link">← Home</a>
+    <span class="form-header-title">Load Bracket</span>
+  </header>
+
+  <main class="form-main">
+    <div class="form-card">
+      <div class="form-card-icon">◎</div>
+      <h2 class="form-card-title">Welcome Back</h2>
+      <p class="form-card-sub">Enter your bracket name and password to continue.</p>
+
+      <div class="field-group">
+        <label class="field-label" for="bracketName">Bracket Name</label>
+        <input class="field-input" type="text" id="bracketName" placeholder="e.g. Dad's Picks" autocomplete="off" />
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="bracketPassword">Password</label>
+        <input class="field-input" type="password" id="bracketPassword" placeholder="Your bracket password" />
+      </div>
+
+      <div id="loadError" class="error-msg" style="display:none;"></div>
+
+      <button class="btn btn-primary btn-full" id="loadBtn" onclick="loadBracket()">
+        Load My Bracket
+      </button>
+
+      <p class="form-footer-note">Don't have a bracket? <a href="create.html">Create one →</a></p>
+    </div>
+  </main>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { FIREBASE_CONFIG } from "./js/firebase-config.js";
+
+    const app = initializeApp(FIREBASE_CONFIG);
+    const db = getFirestore(app);
+
+    window.loadBracket = async function () {
+      const name = document.getElementById("bracketName").value.trim();
+      const password = document.getElementById("bracketPassword").value.trim();
+      const errEl = document.getElementById("loadError");
+      const btn = document.getElementById("loadBtn");
+
+      errEl.style.display = "none";
+
+      if (!name || !password) {
+        errEl.textContent = "Please fill in both fields.";
+        errEl.style.display = "block";
+        return;
+      }
+
+      btn.textContent = "Loading…";
+      btn.disabled = true;
+
+      try {
+        const q = query(
+          collection(db, "brackets"),
+          where("bracketName", "==", name),
+          where("password", "==", password)
+        );
+        const snap = await getDocs(q);
+
+        if (snap.empty) {
+          errEl.textContent = "No bracket found. Check your name and password.";
+          errEl.style.display = "block";
+          btn.textContent = "Load My Bracket";
+          btn.disabled = false;
+          return;
+        }
+
+        const docId = snap.docs[0].id;
+        sessionStorage.setItem("activeBracketId", docId);
+        window.location.href = "bracket.html";
+      } catch (e) {
+        errEl.textContent = "Something went wrong. Try again.";
+        errEl.style.display = "block";
+        btn.textContent = "Load My Bracket";
+        btn.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>

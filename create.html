@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Bracket — WC2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body class="form-page">
+
+  <div class="form-bg"></div>
+
+  <header class="form-header" id="topHeader">
+    <a href="index.html" class="back-link">← Home</a>
+    <span class="form-header-title" id="headerTitle">Create Bracket</span>
+  </header>
+
+  <main class="form-main" id="appRoot"></main>
+
+  <script src="data/matches.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { FIREBASE_CONFIG } from "./js/firebase-config.js";
+
+    const app = initializeApp(FIREBASE_CONFIG);
+    const db = getFirestore(app);
+
+    // ─── State ───────────────────────────────────────────────────────────────
+    let step = "info"; // info | matches | goals
+    let bracketInfo = {};
+    let picks = {}; // matchId -> "home" | "away" | "draw"
+    let currentMatchIndex = 0;
+    const TOTAL = GROUP_STAGE_MATCHES.length;
+
+    const COLORS = [
+      { name: "Crimson",    value: "#C0392B" },
+      { name: "Royal Blue", value: "#1A5276" },
+      { name: "Forest",     value: "#1E8449" },
+      { name: "Gold",       value: "#B7950B" },
+      { name: "Violet",     value: "#6C3483" },
+      { name: "Teal",       value: "#117A65" },
+      { name: "Slate",      value: "#2C3E50" },
+      { name: "Copper",     value: "#A04000" },
+    ];
+
+    const root = document.getElementById("appRoot");
+
+    // ─── Render helpers ──────────────────────────────────────────────────────
+    function render() {
+      if (step === "info")    renderInfo();
+      else if (step === "matches") renderMatch();
+      else if (step === "goals")  renderGoals();
+    }
+
+    // ─── Step 1: Info ────────────────────────────────────────────────────────
+    function renderInfo() {
+      document.getElementById("headerTitle").textContent = "Create Bracket";
+      root.innerHTML = `
+        <div class="form-card">
+          <div class="form-card-icon">✦</div>
+          <h2 class="form-card-title">Your Bracket</h2>
+          <p class="form-card-sub">Set up your identity and pick a color.</p>
+
+          <div class="field-group">
+            <label class="field-label" for="ownerName">Your Name</label>
+            <input class="field-input" type="text" id="ownerName" placeholder="e.g. Dad" maxlength="30" autocomplete="off" />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="bracketNameCreate">Bracket Name</label>
+            <input class="field-input" type="text" id="bracketNameCreate" placeholder="e.g. Dad's Picks 2026" maxlength="40" autocomplete="off" />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="bracketPw">Password</label>
+            <input class="field-input" type="password" id="bracketPw" placeholder="Choose a password" />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Bracket Color</label>
+            <div class="color-palette" id="colorPalette">
+              ${COLORS.map((c, i) => `
+                <button class="color-swatch ${i === 0 ? "selected" : ""}" 
+                        data-color="${c.value}" 
+                        data-index="${i}"
+                        title="${c.name}"
+                        style="background:${c.value};"
+                        onclick="selectColor(this)">
+                </button>
+              `).join("")}
+            </div>
+            <span class="color-label" id="colorLabel">${COLORS[0].name}</span>
+          </div>
+
+          <div id="infoError" class="error-msg" style="display:none;"></div>
+
+          <button class="btn btn-primary btn-full" onclick="submitInfo()">
+            Next: Pick Matches →
+          </button>
+        </div>
+      `;
+    }
+
+    window.selectColor = function(el) {
+      document.querySelectorAll(".color-swatch").forEach(s => s.classList.remove("selected"));
+      el.classList.add("selected");
+      const idx = parseInt(el.dataset.index);
+      document.getElementById("colorLabel").textContent = COLORS[idx].name;
+    };
+
+    window.submitInfo = async function() {
+      const owner = document.getElementById("ownerName").value.trim();
+      const bname = document.getElementById("bracketNameCreate").value.trim();
+      const pw    = document.getElementById("bracketPw").value.trim();
+      const colorEl = document.querySelector(".color-swatch.selected");
+      const color = colorEl ? colorEl.dataset.color : COLORS[0].value;
+      const errEl = document.getElementById("infoError");
+
+      errEl.style.display = "none";
+
+      if (!owner || !bname || !pw) {
+        errEl.textContent = "All fields are required.";
+        errEl.style.display = "block";
+        return;
+      }
+      if (pw.length < 4) {
+        errEl.textContent = "Password must be at least 4 characters.";
+        errEl.style.display = "block";
+        return;
+      }
+
+      // Check uniqueness
+      try {
+        const q = query(collection(db, "brackets"), where("bracketName", "==", bname));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          errEl.textContent = "A bracket with that name already exists. Choose another.";
+          errEl.style.display = "block";
+          return;
+        }
+      } catch(e) {}
+
+      bracketInfo = { owner, bracketName: bname, password: pw, color };
+      step = "matches";
+      currentMatchIndex = 0;
+      render();
+    };
+
+    // ─── Step 2: Matches ─────────────────────────────────────────────────────
+    function renderMatch() {
+      const match = GROUP_STAGE_MATCHES[currentMatchIndex];
+      const total = TOTAL;
+      const pct = Math.round(((currentMatchIndex) / total) * 100);
+      const existingPick = picks[match.id];
+
+      document.getElementById("headerTitle").textContent = `Match ${currentMatchIndex + 1} of ${total}`;
+
+      const accentColor = bracketInfo.color;
+
+      root.innerHTML = `
+        <div class="match-card">
+          <div class="match-progress">
+            <div class="match-progress-bar">
+              <div class="match-progress-fill" style="width:${pct}%; background:${accentColor};"></div>
+            </div>
+            <span class="match-progress-label">${currentMatchIndex} / ${total} picked</span>
+          </div>
+
+          <div class="match-group-badge" style="background:${accentColor}20; color:${accentColor}; border:1px solid ${accentColor}40;">
+            Group ${match.group}
+          </div>
+
+          <h3 class="match-title">Who wins this match?</h3>
+
+          <div class="match-teams">
+            <button class="team-btn ${existingPick === "home" ? "team-btn--winner" : ""}" 
+                    data-pick="home" onclick="pickTeam('home')"
+                    style="${existingPick === "home" ? `--team-accent:${accentColor};` : ""}">
+              <span class="team-flag">${match.home.flag}</span>
+              <span class="team-name">${match.home.name}</span>
+              <span class="team-win-label" style="background:${accentColor};">WINNER</span>
+            </button>
+
+            <div class="match-vs-col">
+              <span class="match-vs">VS</span>
+              <button class="draw-btn ${existingPick === "draw" ? "draw-btn--selected" : ""}"
+                      onclick="pickTeam('draw')">
+                DRAW
+              </button>
+            </div>
+
+            <button class="team-btn ${existingPick === "away" ? "team-btn--winner" : ""}"
+                    data-pick="away" onclick="pickTeam('away')"
+                    style="${existingPick === "away" ? `--team-accent:${accentColor};` : ""}">
+              <span class="team-flag">${match.away.flag}</span>
+              <span class="team-name">${match.away.name}</span>
+              <span class="team-win-label" style="background:${accentColor};">WINNER</span>
+            </button>
+          </div>
+
+          <div class="match-nav">
+            ${currentMatchIndex > 0 ? `<button class="btn btn-ghost" onclick="prevMatch()">← Back</button>` : `<span></span>`}
+            ${existingPick ? `<button class="btn btn-primary" onclick="nextMatch()" style="background:${accentColor};">Next →</button>` : `<button class="btn btn-disabled" disabled>Pick to Continue</button>`}
+          </div>
+        </div>
+      `;
+    }
+
+    window.pickTeam = function(pick) {
+      const match = GROUP_STAGE_MATCHES[currentMatchIndex];
+      picks[match.id] = pick;
+      renderMatch();
+    };
+
+    window.nextMatch = function() {
+      const match = GROUP_STAGE_MATCHES[currentMatchIndex];
+      if (!picks[match.id]) return;
+      if (currentMatchIndex < TOTAL - 1) {
+        currentMatchIndex++;
+        render();
+      } else {
+        step = "goals";
+        render();
+      }
+    };
+
+    window.prevMatch = function() {
+      if (currentMatchIndex > 0) {
+        currentMatchIndex--;
+        render();
+      }
+    };
+
+    // ─── Step 3: Total Goals ─────────────────────────────────────────────────
+    function renderGoals() {
+      document.getElementById("headerTitle").textContent = "Final Step";
+      root.innerHTML = `
+        <div class="form-card">
+          <div class="form-card-icon" style="color:${bracketInfo.color};">⚽</div>
+          <h2 class="form-card-title">One Last Pick</h2>
+          <p class="form-card-sub">How many total goals will be scored across all 72 group stage matches?</p>
+
+          <div class="field-group">
+            <label class="field-label" for="totalGoals">Total Goals (Group Stage)</label>
+            <input class="field-input field-input--large" type="number" id="totalGoals" 
+                   placeholder="e.g. 124" min="0" max="400" />
+            <span class="field-hint">The average is around 120–140 goals in a 48-team group stage.</span>
+          </div>
+
+          <div id="goalsError" class="error-msg" style="display:none;"></div>
+
+          <div class="match-nav">
+            <button class="btn btn-ghost" onclick="goBackToMatches()">← Back</button>
+            <button class="btn btn-primary btn-submit" onclick="submitBracket()" 
+                    style="background:${bracketInfo.color};">
+              Submit Bracket ✓
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    window.goBackToMatches = function() {
+      step = "matches";
+      currentMatchIndex = TOTAL - 1;
+      render();
+    };
+
+    window.submitBracket = async function() {
+      const goals = parseInt(document.getElementById("totalGoals").value);
+      const errEl = document.getElementById("goalsError");
+      errEl.style.display = "none";
+
+      if (isNaN(goals) || goals < 0 || goals > 400) {
+        errEl.textContent = "Please enter a valid number of goals (0–400).";
+        errEl.style.display = "block";
+        return;
+      }
+
+      const btn = document.querySelector(".btn-submit");
+      btn.textContent = "Saving…";
+      btn.disabled = true;
+
+      try {
+        const doc = await addDoc(collection(db, "brackets"), {
+          ...bracketInfo,
+          picks,
+          totalGoalsGuess: goals,
+          score: 0,
+          createdAt: Date.now(),
+          stage: "group"
+        });
+
+        sessionStorage.setItem("activeBracketId", doc.id);
+        window.location.href = "bracket.html";
+      } catch(e) {
+        errEl.textContent = "Failed to save. Check your connection and try again.";
+        errEl.style.display = "block";
+        btn.textContent = "Submit Bracket ✓";
+        btn.disabled = false;
+      }
+    };
+
+    // ─── Init ────────────────────────────────────────────────────────────────
+    render();
+  </script>
+</body>
+</html>
