@@ -98,9 +98,9 @@
           return `
             <div class="match-row ${isCorrect ? "match-row--correct" : ""} ${isWrong ? "match-row--wrong" : ""}">
               <div class="match-row-teams">
-                <span>${m.home.flag} ${m.home.name}</span>
+                <img class="match-row-flag" src="${m.home.flag}" alt="${m.home.name}" /><span>${m.home.name}</span>
                 <span class="match-row-vs">vs</span>
-                <span>${m.away.flag} ${m.away.name}</span>
+                <img class="match-row-flag" src="${m.away.flag}" alt="${m.away.name}" /><span>${m.away.name}</span>
               </div>
               <div class="match-row-picks">
                 <span class="pick-chip ${isCorrect ? "pick-chip--correct" : ""} ${isWrong ? "pick-chip--wrong" : ""}">
