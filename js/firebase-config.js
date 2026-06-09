@@ -10,10 +10,10 @@
 //   6. Set Firestore rules to allow read/write (see README for rules)
 
 export const FIREBASE_CONFIG = {
-  apiKey:            "YOUR_API_KEY",
-  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId:         "YOUR_PROJECT_ID",
-  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId:             "YOUR_APP_ID"
+  apiKey:            "AIzaSyCs0w7IoiiliVWw5hEcPZmLxSYsW3bopG4",
+  authDomain:        "fwc-26-eb986.firebaseapp.com",
+  projectId:         "fwc-26-eb986",
+  storageBucket:     "fwc-26-eb986.firebasestorage.app",
+  messagingSenderId: "399770352276",
+  appId:             "1:399770352276:web:aa0327f9d7abc1d85fd281"
 };
