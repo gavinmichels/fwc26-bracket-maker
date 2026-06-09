@@ -420,6 +420,13 @@ input { font-family: var(--font-body); }
   font-weight: 600;
 }
 
+.match-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
 .match-group-badge {
   display: inline-block;
   font-size: 0.7rem;
@@ -428,7 +435,32 @@ input { font-family: var(--font-body); }
   letter-spacing: 0.1em;
   border-radius: 999px;
   padding: 0.3rem 0.85rem;
-  margin-bottom: 1.25rem;
+}
+.match-datetime {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* Flag images */
+.team-flag-img {
+  width: 56px;
+  height: auto;
+  border-radius: 3px;
+  display: block;
+  object-fit: cover;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+@media (min-width: 480px) {
+  .team-flag-img { width: 68px; }
+}
+.match-row-flag {
+  width: 20px;
+  height: auto;
+  border-radius: 2px;
+  vertical-align: middle;
+  margin-right: 4px;
+  flex-shrink: 0;
 }
 
 .match-title {
@@ -471,11 +503,6 @@ input { font-family: var(--font-body); }
   background: color-mix(in srgb, var(--team-accent, var(--green)) 12%, transparent) !important;
 }
 
-.team-flag {
-  font-size: clamp(2.25rem, 8vw, 3.25rem);
-  line-height: 1;
-  display: block;
-}
 .team-name {
   font-size: clamp(0.75rem, 2.8vw, 0.95rem);
   font-weight: 700;
