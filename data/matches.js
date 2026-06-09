@@ -2,7 +2,7 @@
 // Helper: f("xx") => "https://flagcdn.com/w40/xx.png"
 // Special cases noted inline
 
-const FLAG = code => `../flags/${code}.svg`;
+const FLAG = code => `https://flagcdn.com/40x30/${code}.png`;
 
 const GROUP_STAGE_MATCHES = [
   { id: 1,  group: "A", date: "June 11", time: "2:00 PM",
