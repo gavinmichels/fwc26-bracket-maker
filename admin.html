@@ -122,11 +122,16 @@
     }
 
     window.setOutcome = function(matchId, result, btn) {
-      outcomes[matchId] = result;
-      // Update button states in this row
+      const isAlreadyActive = btn.classList.contains("admin-result-btn--active");
       const row = btn.closest(".admin-result-btns");
       row.querySelectorAll(".admin-result-btn").forEach(b => b.classList.remove("admin-result-btn--active"));
-      btn.classList.add("admin-result-btn--active");
+      if (isAlreadyActive) {
+        // Toggle off — clear this match's outcome
+        delete outcomes[matchId];
+      } else {
+        outcomes[matchId] = result;
+        btn.classList.add("admin-result-btn--active");
+      }
     };
 
     window.saveOutcomes = async function() {

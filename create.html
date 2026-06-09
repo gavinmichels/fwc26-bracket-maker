@@ -161,7 +161,7 @@
     function inlineRank(teamName, opponentName) {
       const rank = TEAM_RANK[teamName] ?? "?";
       const role = getTeamRole(teamName, opponentName);
-      const color = role === "underdog" ? "#E67E22" : role === "favorite" ? "#1A5276" : "#888";
+      const color = role === "underdog" ? "#9B72CF" : role === "favorite" ? "#5BA4CF" : "#888";
       const label = role === "underdog" ? `#${rank} ⭐` : `#${rank}`;
       return `<span class="inline-rank-badge" style="background:${color};">${label}</span>`;
     }
