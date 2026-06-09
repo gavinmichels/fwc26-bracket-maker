@@ -169,8 +169,11 @@
             <span class="match-progress-label">${currentMatchIndex} / ${total} picked</span>
           </div>
 
-          <div class="match-group-badge" style="background:${accentColor}20; color:${accentColor}; border:1px solid ${accentColor}40;">
-            Group ${match.group}
+          <div class="match-meta">
+            <div class="match-group-badge" style="background:${accentColor}20; color:${accentColor}; border:1px solid ${accentColor}40;">
+              Group ${match.group}
+            </div>
+            <div class="match-datetime">📅 ${match.date} &nbsp;·&nbsp; 🕐 ${match.time} ET</div>
           </div>
 
           <h3 class="match-title">Who wins this match?</h3>
@@ -179,7 +182,7 @@
             <button class="team-btn ${existingPick === "home" ? "team-btn--winner" : ""}" 
                     data-pick="home" onclick="pickTeam('home')"
                     style="${existingPick === "home" ? `--team-accent:${accentColor};` : ""}">
-              <span class="team-flag">${match.home.flag}</span>
+              <img class="team-flag-img" src="${match.home.flag}" alt="${match.home.name}" />
               <span class="team-name">${match.home.name}</span>
               <span class="team-win-label" style="background:${accentColor};">WINNER</span>
             </button>
@@ -195,7 +198,7 @@
             <button class="team-btn ${existingPick === "away" ? "team-btn--winner" : ""}"
                     data-pick="away" onclick="pickTeam('away')"
                     style="${existingPick === "away" ? `--team-accent:${accentColor};` : ""}">
-              <span class="team-flag">${match.away.flag}</span>
+              <img class="team-flag-img" src="${match.away.flag}" alt="${match.away.name}" />
               <span class="team-name">${match.away.name}</span>
               <span class="team-win-label" style="background:${accentColor};">WINNER</span>
             </button>
