@@ -351,7 +351,7 @@ input { font-family: var(--font-body); }
 
 .landing-sub {
   font-size: 1rem;
-  color: var(--muted);
+  color: rgba(236, 57, 29, 0.8);
   margin-bottom: 2.5rem;
   line-height: 1.6;
 }
