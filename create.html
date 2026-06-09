@@ -203,7 +203,11 @@
                     style="${existingPick === "home" ? `--team-accent:${accentColor};` : ""}">
               <img class="team-flag-img" src="${match.home.flag}" alt="${match.home.name}" />
               <span class="team-name">${match.home.name} ${inlineRank(match.home.name, match.away.name)}</span>
-              <span class="team-win-label" style="background:${accentColor};">WINNER</span>
+              ${existingPick === "home" ? `
+                <span class="team-win-label" style="background:${accentColor};">
+                  WINNER
+                </span>
+                ` : ""}
             </button>
 
             <div class="match-vs-col">
@@ -219,7 +223,11 @@
                     style="${existingPick === "away" ? `--team-accent:${accentColor};` : ""}">
               <img class="team-flag-img" src="${match.away.flag}" alt="${match.away.name}" />
               <span class="team-name">${match.away.name} ${inlineRank(match.away.name, match.home.name)}</span>
-              <span class="team-win-label" style="background:${accentColor};">WINNER</span>
+              ${existingPick === "away" ? `
+                <span class="team-win-label" style="background:${accentColor};">
+                  WINNER
+                </span>
+                ` : ""}
             </button>
           </div>
 
