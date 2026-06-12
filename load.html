@@ -25,7 +25,7 @@
 
       <div class="field-group">
         <label class="field-label" for="bracketName">Bracket Name</label>
-        <input class="field-input" type="text" id="bracketName" placeholder="e.g. Dad's Picks" autocomplete="off" />
+        <input class="field-input" type="text" id="bracketName" placeholder="Hyan Reidcamp's Picks" autocomplete="off" />
       </div>
 
       <div class="field-group">
@@ -87,6 +87,7 @@
 
         const docId = snap.docs[0].id;
         sessionStorage.setItem("activeBracketId", docId);
+        sessionStorage.setItem("bracketIsOwner", "true");
         window.location.href = "bracket.html";
       } catch (e) {
         errEl.textContent = "Something went wrong. Try again.";

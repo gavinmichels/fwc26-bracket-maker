@@ -353,6 +353,7 @@
         });
 
         sessionStorage.setItem("activeBracketId", doc.id);
+        sessionStorage.setItem("bracketIsOwner", "true");
         window.location.href = "bracket.html";
       } catch(e) {
         errEl.textContent = "Failed to save. Check your connection and try again.";

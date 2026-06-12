@@ -34,6 +34,29 @@
 
     <div id="adminPanel" style="display:none;">
       <div class="admin-header-card">
+        <h2 class="admin-title">Tournament Stats</h2>
+        <p class="admin-sub">Update live tournament totals displayed on the League page.</p>
+        <div style="display:flex; gap:1rem; flex-wrap:wrap; margin:1rem 0;">
+          <div class="field-group" style="flex:1; min-width:120px;">
+            <label class="field-label" for="statGoals">⚽ Goals</label>
+            <input class="field-input" type="number" id="statGoals" placeholder="0" min="0" max="999" />
+          </div>
+          <div class="field-group" style="flex:1; min-width:120px;">
+            <label class="field-label" for="statYellows">🟨 Yellow Cards</label>
+            <input class="field-input" type="number" id="statYellows" placeholder="0" min="0" max="999" />
+          </div>
+          <div class="field-group" style="flex:1; min-width:120px;">
+            <label class="field-label" for="statReds">🟥 Red Cards</label>
+            <input class="field-input" type="number" id="statReds" placeholder="0" min="0" max="999" />
+          </div>
+        </div>
+        <div class="admin-save-bar" style="margin-top:0;">
+          <span id="statsStatus" class="save-status"></span>
+          <button class="btn btn-primary" onclick="saveStats()">Save Stats</button>
+        </div>
+      </div>
+
+      <div class="admin-header-card" style="margin-top:1rem;">
         <h2 class="admin-title">Match Outcomes</h2>
         <p class="admin-sub">Select the result for each match. All brackets score automatically.</p>
         <div class="admin-save-bar">
@@ -74,8 +97,17 @@
     };
 
     async function loadOutcomes() {
-      const snap = await getDoc(doc(db, "admin", "outcomes"));
+      const [snap, statsSnap] = await Promise.all([
+        getDoc(doc(db, "admin", "outcomes")),
+        getDoc(doc(db, "admin", "stats"))
+      ]);
       outcomes = snap.exists() ? snap.data().results || {} : {};
+      if (statsSnap.exists()) {
+        const s = statsSnap.data();
+        document.getElementById("statGoals").value   = s.goals   ?? "";
+        document.getElementById("statYellows").value = s.yellows ?? "";
+        document.getElementById("statReds").value    = s.reds    ?? "";
+      }
       renderMatches();
     }
 
@@ -131,6 +163,21 @@
       } else {
         outcomes[matchId] = result;
         btn.classList.add("admin-result-btn--active");
+      }
+    };
+
+    window.saveStats = async function() {
+      const status = document.getElementById("statsStatus");
+      const goals   = parseInt(document.getElementById("statGoals").value)   || 0;
+      const yellows = parseInt(document.getElementById("statYellows").value) || 0;
+      const reds    = parseInt(document.getElementById("statReds").value)    || 0;
+      status.textContent = "Saving…";
+      try {
+        await setDoc(doc(db, "admin", "stats"), { goals, yellows, reds });
+        status.textContent = "✓ Saved!";
+        setTimeout(() => status.textContent = "", 3000);
+      } catch(e) {
+        status.textContent = "✗ Save failed.";
       }
     };
 

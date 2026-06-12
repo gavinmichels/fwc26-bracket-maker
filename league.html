@@ -70,13 +70,15 @@
 
     async function loadLeague() {
       try {
-        const [bracketsSnap, adminSnap] = await Promise.all([
+        const [bracketsSnap, adminSnap, statsSnap] = await Promise.all([
           getDocs(collection(db, "brackets")),
-          getDoc(doc(db, "admin", "outcomes"))
+          getDoc(doc(db, "admin", "outcomes")),
+          getDoc(doc(db, "admin", "stats"))
         ]);
 
         const outcomes = adminSnap.exists() ? adminSnap.data().results || {} : {};
         const playedCount = Object.keys(outcomes).length;
+        const stats = statsSnap.exists() ? statsSnap.data() : { goals: null, yellows: null, reds: null };
 
         const brackets = [];
         bracketsSnap.forEach(d => {
@@ -94,13 +96,13 @@
         });
 
         brackets.sort((a, b) => b.points - a.points);
-        render(brackets, playedCount, outcomes);
+        render(brackets, playedCount, outcomes, stats);
       } catch(e) {
         root.innerHTML = `<p class="error-msg" style="display:block; text-align:center;">Could not load standings.</p>`;
       }
     }
 
-    function render(brackets, playedCount, outcomes) {
+    function render(brackets, playedCount, outcomes, stats) {
       if (brackets.length === 0) {
         root.innerHTML = `
           <div class="league-empty">
@@ -148,6 +150,11 @@
         <div class="league-hero">
           <h1 class="league-title">🏆 Family League 🏆</h1>
           <p class="league-subtitle">${played} of 72 group stage matches played</p>
+          <p class="league-subtitle" style="margin-top:4px; font-size:0.85rem; opacity:0.75;">
+            ⚽ <strong>${stats.goals ?? "—"}</strong> goals &nbsp;·&nbsp;
+            🟨 <strong>${stats.yellows ?? "—"}</strong> yellows &nbsp;·&nbsp;
+            🟥 <strong>${stats.reds ?? "—"}</strong> reds
+          </p>
         </div>
 
         <div class="league-table">
@@ -170,6 +177,7 @@
 
     window.openBracket = function(id) {
       sessionStorage.setItem("activeBracketId", id);
+      sessionStorage.setItem("bracketIsOwner", "false");
       window.location.href = "bracket.html";
     };
 

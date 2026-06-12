@@ -52,6 +52,7 @@
     const root = document.getElementById("bracketRoot");
 
     const bracketId = sessionStorage.getItem("activeBracketId");
+    const isOwner   = sessionStorage.getItem("bracketIsOwner") === "true";
     if (!bracketId) {
       window.location.href = "index.html";
     }
@@ -87,7 +88,7 @@
         });
         const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
 
-        renderBracket(data, outcomes, correct, total, points, accuracy, color);
+        renderBracket(data, outcomes, correct, total, points, accuracy, color, isOwner);
       } catch(e) {
         root.innerHTML = `<div class="form-card"><p class="error-msg" style="display:block;">Failed to load. Try again.</p></div>`;
       }
@@ -102,7 +103,7 @@
       return `<span class="${badgeClass}" title="FIFA rank #${rank}">${rank}</span>`;
     }
 
-    function renderBracket(data, outcomes, correct, total, points, accuracy, color) {
+    function renderBracket(data, outcomes, correct, total, points, accuracy, color, isOwner) {
       const groups = ["A","B","C","D","E","F","G","H","I","J","K","L"];
 
       const groupSections = groups.map(g => {
@@ -158,6 +159,7 @@
           <div class="bracket-hero-info">
             <div class="bracket-owner-tag">⚽ ${data.owner}</div>
             <h1 class="bracket-name" style="color:${color};">${data.bracketName}</h1>
+            ${isOwner ? `<a href="create.html" class="btn btn-primary" style="background:${color}; margin-top:0.75rem; display:inline-block; padding:0.5rem 1.25rem; font-size:0.85rem;">✏️ Choices</a>` : ""}
           </div>
           <div class="bracket-score-block">
             <div class="score-big" style="color:${color};">${points}</div>
