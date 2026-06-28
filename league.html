@@ -101,9 +101,10 @@
           // Tiebreaker bonuses
           const bonusTags = [];
           for (const [key, bval] of Object.entries(bonuses)) {
-            if (bval.bracketId === d.id && bval.pts > 0) {
+            const emoji = key === "goals" ? "⚽" : key === "yellows" ? "🟨" : "🟥";
+            const isWinner = (bval.bracketId1 === d.id || bval.bracketId2 === d.id);
+            if (isWinner && bval.pts > 0) {
               points += bval.pts;
-              const emoji = key === "goals" ? "⚽" : key === "yellows" ? "🟨" : "🟥";
               bonusTags.push({ emoji, pts: bval.pts });
             }
           }

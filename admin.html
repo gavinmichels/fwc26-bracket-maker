@@ -292,30 +292,41 @@
 
     function renderBonusRows() {
       const container = document.getElementById("bonusRows");
-      const opts = allBrackets.map(b =>
-        `<option value="${b.id}" ${bonuses[BONUS_CATEGORIES[0]?.key]?.bracketId === b.id ? "" : ""}>${b.bracketName}</option>`
-      ).join("");
 
       container.innerHTML = BONUS_CATEGORIES.map(cat => {
         const saved = bonuses[cat.key] || {};
-        const selectOpts = `<option value="">— No winner yet —</option>` +
-          allBrackets.map(b =>
-            `<option value="${b.id}" ${saved.bracketId === b.id ? "selected" : ""}>${b.bracketName}</option>`
-          ).join("");
+
+        const makeSelect = (n) => {
+          const savedId = saved[`bracketId${n}`] || "";
+          const opts = `<option value="">— No winner —</option>` +
+            allBrackets.map(b =>
+              `<option value="${b.id}" ${savedId === b.id ? "selected" : ""}>${b.bracketName}</option>`
+            ).join("");
+          return `
+            <select id="bonusBracket_${cat.key}_${n}"
+              style="flex:1; min-width:140px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); border-radius:8px; color:var(--white); font-family:'Inter',sans-serif; font-size:0.85rem; padding:0.5rem 0.75rem; outline:none;">
+              ${opts}
+            </select>`;
+        };
+
         return `
-          <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; padding:0.85rem 1rem;">
-            <span style="font-size:0.8rem; font-weight:700; min-width:120px; color:var(--white);">${cat.label}</span>
-            <select id="bonusBracket_${cat.key}"
-              style="flex:1; min-width:160px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); border-radius:8px; color:var(--white); font-family:'Inter',sans-serif; font-size:0.85rem; padding:0.5rem 0.75rem; outline:none;">
-              ${selectOpts}
-            </select>
-            <div style="display:flex; align-items:center; gap:0.5rem;">
+          <div style="display:flex; flex-direction:column; gap:0.5rem; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; padding:0.85rem 1rem;">
+            <span style="font-size:0.8rem; font-weight:700; color:var(--white);">${cat.label}</span>
+            <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+              <span style="font-size:0.72rem; color:var(--muted); min-width:50px;">Winner 1</span>
+              ${makeSelect(1)}
+            </div>
+            <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+              <span style="font-size:0.72rem; color:var(--muted); min-width:50px;">Winner 2</span>
+              ${makeSelect(2)}
+            </div>
+            <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.25rem;">
               <span style="font-size:0.75rem; color:var(--muted); font-weight:700;">+</span>
               <input id="bonusPts_${cat.key}" type="number" min="0" max="999"
                 value="${saved.pts ?? ""}"
                 placeholder="pts"
                 style="width:70px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); border-radius:8px; color:var(--white); font-family:'Inter',sans-serif; font-size:0.9rem; font-weight:700; padding:0.5rem 0.6rem; outline:none; text-align:center;" />
-              <span style="font-size:0.75rem; color:var(--muted); font-weight:700;">pts</span>
+              <span style="font-size:0.75rem; color:var(--muted); font-weight:700;">pts each</span>
             </div>
           </div>
         `;
@@ -327,10 +338,18 @@
       status.textContent = "Saving…";
       const newBonuses = {};
       for (const cat of BONUS_CATEGORIES) {
-        const bracketId   = document.getElementById(`bonusBracket_${cat.key}`).value;
-        const pts         = parseInt(document.getElementById(`bonusPts_${cat.key}`).value) || 0;
-        const bracketName = allBrackets.find(b => b.id === bracketId)?.bracketName || "";
-        if (bracketId) newBonuses[cat.key] = { bracketId, bracketName, pts };
+        const bracketId1   = document.getElementById(`bonusBracket_${cat.key}_1`).value;
+        const bracketId2   = document.getElementById(`bonusBracket_${cat.key}_2`).value;
+        const pts          = parseInt(document.getElementById(`bonusPts_${cat.key}`).value) || 0;
+        const bracketName1 = allBrackets.find(b => b.id === bracketId1)?.bracketName || "";
+        const bracketName2 = allBrackets.find(b => b.id === bracketId2)?.bracketName || "";
+        if (bracketId1) {
+          newBonuses[cat.key] = {
+            bracketId1, bracketName1,
+            pts,
+            ...(bracketId2 ? { bracketId2, bracketName2 } : {}),
+          };
+        }
       }
       try {
         await setDoc(doc(db, "admin", "bonuses"), newBonuses);
