@@ -59,6 +59,7 @@
   </main>
 
   <script src="data/matches.js"></script>
+  <script src="data/knockout_matches.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -70,15 +71,19 @@
 
     async function loadLeague() {
       try {
-        const [bracketsSnap, adminSnap, statsSnap] = await Promise.all([
+        const [bracketsSnap, adminSnap, statsSnap, bonusSnap, koSnap] = await Promise.all([
           getDocs(collection(db, "brackets")),
           getDoc(doc(db, "admin", "outcomes")),
-          getDoc(doc(db, "admin", "stats"))
+          getDoc(doc(db, "admin", "stats")),
+          getDoc(doc(db, "admin", "bonuses")),
+          getDoc(doc(db, "admin", "knockout")),
         ]);
 
         const outcomes = adminSnap.exists() ? adminSnap.data().results || {} : {};
         const playedCount = Object.keys(outcomes).length;
         const stats = statsSnap.exists() ? statsSnap.data() : { goals: null, yellows: null, reds: null };
+        const bonuses = bonusSnap.exists() ? bonusSnap.data() : {};
+        const koOutcomes = koSnap.exists() ? (koSnap.data().outcomes || {}) : {};
 
         const brackets = [];
         bracketsSnap.forEach(d => {
@@ -90,9 +95,21 @@
             if (outcome && pick === outcome) correct++;
             points += getMatchPoints(m, pick, outcome);
           });
+          // Knockout points
+          const { total: koPts } = getKnockoutPoints(data.koPicks || {}, koOutcomes);
+          points += koPts;
+          // Tiebreaker bonuses
+          const bonusTags = [];
+          for (const [key, bval] of Object.entries(bonuses)) {
+            if (bval.bracketId === d.id && bval.pts > 0) {
+              points += bval.pts;
+              const emoji = key === "goals" ? "⚽" : key === "yellows" ? "🟨" : "🟥";
+              bonusTags.push({ emoji, pts: bval.pts });
+            }
+          }
           const played = GROUP_STAGE_MATCHES.filter(m => outcomes[m.id]).length;
           const accuracy = played > 0 ? Math.round((correct / played) * 100) : 0;
-          brackets.push({ id: d.id, ...data, correct, points, accuracy });
+          brackets.push({ id: d.id, ...data, correct, points, accuracy, bonusTags });
         });
 
         brackets.sort((a, b) => b.points - a.points);
@@ -128,7 +145,7 @@
             <div class="league-color-dot" style="background:${b.color || "#1A5276"};"></div>
             <div class="league-info">
               <span class="league-name">${b.bracketName}</span>
-              <span class="league-owner">${b.owner}</span>
+              <span class="league-owner">${b.owner}${b.bonusTags && b.bonusTags.length ? ' &nbsp;' + b.bonusTags.map(t => `<span style="font-size:0.65rem;font-weight:700;color:var(--gold);background:rgba(240,192,64,0.12);border-radius:4px;padding:1px 5px;margin-left:3px;">${t.emoji}+${t.pts}</span>`).join('') : ''}</span>
             </div>
             <div class="league-score">
               <div class="league-stat">

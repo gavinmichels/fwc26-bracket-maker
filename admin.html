@@ -184,7 +184,18 @@
       <div id="adminMatchList"></div>
 
       <!-- ── Knockout Bracket ── -->
-      <div class="admin-header-card" style="margin-top:2rem;">
+      <!-- ── Tiebreaker Bonuses ── -->
+      <div class="admin-header-card" style="margin-top:1.5rem;">
+        <h2 class="admin-title">Tiebreaker Bonuses</h2>
+        <p class="admin-sub">Award bonus points to the bracket with the closest guess. Select the winning bracket and enter the points to award for each category.</p>
+        <div class="admin-save-bar">
+          <span id="bonusStatus" class="save-status"></span>
+          <button class="btn btn-primary" onclick="saveBonuses()">Save Bonuses</button>
+        </div>
+        <div id="bonusRows" style="display:flex; flex-direction:column; gap:1rem; margin-top:0.75rem;"></div>
+      </div>
+
+            <div class="admin-header-card" style="margin-top:2rem;">
         <h2 class="admin-title">Knockout Bracket</h2>
         <p class="admin-sub">
           Enter the 32 advancing teams in the Round of 32 slots. The bracket structure is pre-wired
@@ -209,7 +220,7 @@
   <script src="data/knockout_matches.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { FIREBASE_CONFIG } from "./js/firebase-config.js";
 
     const app = initializeApp(FIREBASE_CONFIG);
@@ -220,6 +231,8 @@
     let outcomes   = {};
     let koTeams    = {};   // { slotId: { name, flag } }
     let koOutcomes = {};   // { matchId: teamName }
+    let bonuses    = {};   // { goals: { bracketId, bracketName, pts }, yellows: {...}, reds: {...} }
+    let allBrackets = []; // [{ id, bracketName }] for dropdowns
 
     // All teams from matches.js for autocomplete / flag lookup
     const ALL_TEAMS = {};
@@ -242,10 +255,12 @@
     };
 
     async function loadAll() {
-      const [snap, statsSnap, koSnap] = await Promise.all([
+      const [snap, statsSnap, koSnap, bonusSnap, bracketsSnap] = await Promise.all([
         getDoc(doc(db, "admin", "outcomes")),
         getDoc(doc(db, "admin", "stats")),
         getDoc(doc(db, "admin", "knockout")),
+        getDoc(doc(db, "admin", "bonuses")),
+        getDocs(collection(db, "brackets")),
       ]);
       outcomes = snap.exists() ? snap.data().results || {} : {};
       if (statsSnap.exists()) {
@@ -259,9 +274,73 @@
         koTeams    = kd.teams    || {};
         koOutcomes = kd.outcomes || {};
       }
+      bonuses = bonusSnap.exists() ? bonusSnap.data() : {};
+      allBrackets = [];
+      bracketsSnap.forEach(d => allBrackets.push({ id: d.id, bracketName: d.data().bracketName }));
+      allBrackets.sort((a, b) => a.bracketName.localeCompare(b.bracketName));
       renderGroupMatches();
+      renderBonusRows();
       renderKoAdmin();
     }
+
+    // ─── Tiebreaker Bonuses ─────────────────────────────────────
+    const BONUS_CATEGORIES = [
+      { key: "goals",   label: "⚽ Goals",        emoji: "⚽" },
+      { key: "yellows", label: "🟨 Yellow Cards",  emoji: "🟨" },
+      { key: "reds",    label: "🟥 Red Cards",     emoji: "🟥" },
+    ];
+
+    function renderBonusRows() {
+      const container = document.getElementById("bonusRows");
+      const opts = allBrackets.map(b =>
+        `<option value="${b.id}" ${bonuses[BONUS_CATEGORIES[0]?.key]?.bracketId === b.id ? "" : ""}>${b.bracketName}</option>`
+      ).join("");
+
+      container.innerHTML = BONUS_CATEGORIES.map(cat => {
+        const saved = bonuses[cat.key] || {};
+        const selectOpts = `<option value="">— No winner yet —</option>` +
+          allBrackets.map(b =>
+            `<option value="${b.id}" ${saved.bracketId === b.id ? "selected" : ""}>${b.bracketName}</option>`
+          ).join("");
+        return `
+          <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; padding:0.85rem 1rem;">
+            <span style="font-size:0.8rem; font-weight:700; min-width:120px; color:var(--white);">${cat.label}</span>
+            <select id="bonusBracket_${cat.key}"
+              style="flex:1; min-width:160px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); border-radius:8px; color:var(--white); font-family:'Inter',sans-serif; font-size:0.85rem; padding:0.5rem 0.75rem; outline:none;">
+              ${selectOpts}
+            </select>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <span style="font-size:0.75rem; color:var(--muted); font-weight:700;">+</span>
+              <input id="bonusPts_${cat.key}" type="number" min="0" max="999"
+                value="${saved.pts ?? ""}"
+                placeholder="pts"
+                style="width:70px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); border-radius:8px; color:var(--white); font-family:'Inter',sans-serif; font-size:0.9rem; font-weight:700; padding:0.5rem 0.6rem; outline:none; text-align:center;" />
+              <span style="font-size:0.75rem; color:var(--muted); font-weight:700;">pts</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    window.saveBonuses = async function() {
+      const status = document.getElementById("bonusStatus");
+      status.textContent = "Saving…";
+      const newBonuses = {};
+      for (const cat of BONUS_CATEGORIES) {
+        const bracketId   = document.getElementById(`bonusBracket_${cat.key}`).value;
+        const pts         = parseInt(document.getElementById(`bonusPts_${cat.key}`).value) || 0;
+        const bracketName = allBrackets.find(b => b.id === bracketId)?.bracketName || "";
+        if (bracketId) newBonuses[cat.key] = { bracketId, bracketName, pts };
+      }
+      try {
+        await setDoc(doc(db, "admin", "bonuses"), newBonuses);
+        bonuses = newBonuses;
+        status.textContent = "✓ Saved!";
+        setTimeout(() => status.textContent = "", 3000);
+      } catch(e) {
+        status.textContent = "✗ Save failed.";
+      }
+    };
 
     // ─── Group Stage ─────────────────────────────────────────────
     function renderGroupMatches() {
