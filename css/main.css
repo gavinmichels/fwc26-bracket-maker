@@ -970,3 +970,14 @@ input { font-family: var(--font-body); }
 @media (prefers-reduced-motion: reduce) {
   *, .loading-spinner { animation: none !important; transition: none !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   KNOCKOUT BRACKET — shared token (also used in admin)
+   ═══════════════════════════════════════════════════════════════ */
+.match-row-flag {
+  width: 20px;
+  height: 14px;
+  object-fit: cover;
+  border-radius: 2px;
+  flex-shrink: 0;
+}

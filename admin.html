@@ -7,6 +7,120 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/main.css" />
+  <style>
+    /* ── Knockout admin bracket ── */
+    .ko-admin-bracket {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 1rem;
+    }
+    .ko-admin-grid {
+      display: flex;
+      gap: 0;
+      min-width: max-content;
+      align-items: flex-start;
+      padding: 0.5rem 0 0.5rem;
+    }
+    .ko-admin-round {
+      display: flex;
+      flex-direction: column;
+      min-width: 170px;
+      max-width: 190px;
+    }
+    .ko-admin-round-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-align: center;
+      padding: 0 0.5rem 0.6rem;
+      white-space: nowrap;
+    }
+    .ko-admin-connector {
+      width: 24px;
+      flex-shrink: 0;
+    }
+
+    .ko-admin-match {
+      margin: 4px 6px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .ko-admin-slot {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.72rem;
+    }
+    .ko-admin-slot:last-child { border-bottom: none; }
+    .ko-admin-slot label {
+      font-size: 0.6rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+      min-width: 24px;
+    }
+    .ko-admin-input {
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      border: none;
+      color: var(--white);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      outline: none;
+      padding: 2px 0;
+    }
+    .ko-admin-input::placeholder { color: rgba(255,255,255,0.2); font-weight: 400; font-style: italic; }
+    .ko-admin-input:focus { color: var(--green); }
+
+    /* Outcome buttons in admin for KO */
+    .ko-outcome-row {
+      display: flex;
+      gap: 3px;
+      padding: 4px 6px;
+      background: rgba(0,0,0,0.15);
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+    .ko-outcome-btn {
+      flex: 1;
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 3px 4px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.09);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ko-outcome-btn:hover { background: rgba(255,255,255,0.1); color: var(--white); }
+    .ko-outcome-btn--active { background: var(--green) !important; color: var(--navy) !important; border-color: transparent !important; }
+
+    /* Later-round read-only slots */
+    .ko-admin-derived {
+      font-size: 0.68rem;
+      color: var(--muted);
+      font-style: italic;
+      padding: 5px 8px;
+      min-height: 26px;
+      display: flex;
+      align-items: center;
+    }
+    .ko-admin-match--final {
+      border-color: rgba(240,192,64,0.3);
+    }
+  </style>
 </head>
 <body class="admin-page form-page">
 
@@ -17,8 +131,8 @@
     <span class="form-header-title">⚙️ Admin Panel</span>
   </header>
 
-  <main class="form-main">
-    <div id="adminGate">
+  <main class="form-main" style="display:block; padding:0;">
+    <div id="adminGate" style="display:flex; justify-content:center; align-items:flex-start; padding:2rem 1rem 4rem; min-height:calc(100vh - 60px);">
       <div class="form-card">
         <div class="form-card-icon">⚙️</div>
         <h2 class="form-card-title">Admin Access</h2>
@@ -32,7 +146,9 @@
       </div>
     </div>
 
-    <div id="adminPanel" style="display:none;">
+    <div id="adminPanel" style="display:none; padding: 0 0 4rem;">
+
+      <!-- ── Tournament Stats ── -->
       <div class="admin-header-card">
         <h2 class="admin-title">Tournament Stats</h2>
         <p class="admin-sub">Update live tournament totals displayed on the League page.</p>
@@ -56,32 +172,61 @@
         </div>
       </div>
 
-      <div class="admin-header-card" style="margin-top:1rem;">
-        <h2 class="admin-title">Match Outcomes</h2>
+      <!-- ── Group Stage Outcomes ── -->
+      <div class="admin-header-card" style="margin-top:1.5rem;">
+        <h2 class="admin-title">Group Stage Outcomes</h2>
         <p class="admin-sub">Select the result for each match. All brackets score automatically.</p>
         <div class="admin-save-bar">
           <span id="saveStatus" class="save-status"></span>
           <button class="btn btn-primary" onclick="saveOutcomes()">Save All Outcomes</button>
         </div>
       </div>
-
       <div id="adminMatchList"></div>
+
+      <!-- ── Knockout Bracket ── -->
+      <div class="admin-header-card" style="margin-top:2rem;">
+        <h2 class="admin-title">Knockout Bracket</h2>
+        <p class="admin-sub">
+          Enter the 32 advancing teams in the Round of 32 slots. The bracket structure is pre-wired
+          — once you save, users can start making knockout picks. After matches are played, set outcomes
+          here to score brackets automatically.
+        </p>
+        <div class="admin-save-bar">
+          <span id="koSaveStatus" class="save-status"></span>
+          <button class="btn btn-primary" onclick="saveKnockout()">Save Knockout</button>
+        </div>
+      </div>
+      <div style="max-width:860px; margin:0 auto; padding:0 1rem;">
+        <div class="ko-admin-bracket" id="koAdminBracket">
+          <div class="loading-state"><div class="loading-spinner"></div></div>
+        </div>
+      </div>
+
     </div>
   </main>
 
   <script src="data/matches.js"></script>
+  <script src="data/knockout_matches.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { FIREBASE_CONFIG } from "./js/firebase-config.js";
 
     const app = initializeApp(FIREBASE_CONFIG);
-    const db = getFirestore(app);
+    const db  = getFirestore(app);
 
-    // !! Change this to your desired admin password !!
     const ADMIN_PASSWORD = "admin2026";
 
-    let outcomes = {};
+    let outcomes   = {};
+    let koTeams    = {};   // { slotId: { name, flag } }
+    let koOutcomes = {};   // { matchId: teamName }
+
+    // All teams from matches.js for autocomplete / flag lookup
+    const ALL_TEAMS = {};
+    GROUP_STAGE_MATCHES.forEach(m => {
+      ALL_TEAMS[m.home.name] = m.home.flag;
+      ALL_TEAMS[m.away.name] = m.away.flag;
+    });
 
     window.unlockAdmin = function() {
       const pw = document.getElementById("adminPw").value;
@@ -93,13 +238,14 @@
       }
       document.getElementById("adminGate").style.display = "none";
       document.getElementById("adminPanel").style.display = "block";
-      loadOutcomes();
+      loadAll();
     };
 
-    async function loadOutcomes() {
-      const [snap, statsSnap] = await Promise.all([
+    async function loadAll() {
+      const [snap, statsSnap, koSnap] = await Promise.all([
         getDoc(doc(db, "admin", "outcomes")),
-        getDoc(doc(db, "admin", "stats"))
+        getDoc(doc(db, "admin", "stats")),
+        getDoc(doc(db, "admin", "knockout")),
       ]);
       outcomes = snap.exists() ? snap.data().results || {} : {};
       if (statsSnap.exists()) {
@@ -108,13 +254,19 @@
         document.getElementById("statYellows").value = s.yellows ?? "";
         document.getElementById("statReds").value    = s.reds    ?? "";
       }
-      renderMatches();
+      if (koSnap.exists()) {
+        const kd = koSnap.data();
+        koTeams    = kd.teams    || {};
+        koOutcomes = kd.outcomes || {};
+      }
+      renderGroupMatches();
+      renderKoAdmin();
     }
 
-    function renderMatches() {
+    // ─── Group Stage ─────────────────────────────────────────────
+    function renderGroupMatches() {
       const groups = ["A","B","C","D","E","F","G","H","I","J","K","L"];
       const container = document.getElementById("adminMatchList");
-
       container.innerHTML = groups.map(g => {
         const matches = GROUP_STAGE_MATCHES.filter(m => m.group === g);
         const rows = matches.map(m => {
@@ -122,28 +274,23 @@
           return `
             <div class="admin-match-row">
               <div class="admin-match-teams">
-                <img class="match-row-flag" src="${m.home.flag}" alt="${m.home.name}" /><span>${m.home.name}</span>
+                <img class="match-row-flag" src="${m.home.flag}" alt="${m.home.name}" />
+                <span>${m.home.name}</span>
                 <span class="admin-vs">vs</span>
-                <img class="match-row-flag" src="${m.away.flag}" alt="${m.away.name}" /><span>${m.away.name}</span>
+                <img class="match-row-flag" src="${m.away.flag}" alt="${m.away.name}" />
+                <span>${m.away.name}</span>
               </div>
               <div class="admin-result-btns">
                 <button class="admin-result-btn ${cur === "home" ? "admin-result-btn--active" : ""}"
-                        onclick="setOutcome(${m.id}, 'home', this)">
-                  ${m.home.name} Wins
-                </button>
+                        onclick="setOutcome(${m.id}, 'home', this)">${m.home.name} Wins</button>
                 <button class="admin-result-btn admin-result-btn--draw ${cur === "draw" ? "admin-result-btn--active" : ""}"
-                        onclick="setOutcome(${m.id}, 'draw', this)">
-                  Draw
-                </button>
+                        onclick="setOutcome(${m.id}, 'draw', this)">Draw</button>
                 <button class="admin-result-btn ${cur === "away" ? "admin-result-btn--active" : ""}"
-                        onclick="setOutcome(${m.id}, 'away', this)">
-                  ${m.away.name} Wins
-                </button>
+                        onclick="setOutcome(${m.id}, 'away', this)">${m.away.name} Wins</button>
               </div>
             </div>
           `;
         }).join("");
-
         return `
           <div class="group-section">
             <div class="group-header" style="border-left:3px solid #1A5276;">Group ${g}</div>
@@ -155,15 +302,19 @@
 
     window.setOutcome = function(matchId, result, btn) {
       const isAlreadyActive = btn.classList.contains("admin-result-btn--active");
-      const row = btn.closest(".admin-result-btns");
-      row.querySelectorAll(".admin-result-btn").forEach(b => b.classList.remove("admin-result-btn--active"));
-      if (isAlreadyActive) {
-        // Toggle off — clear this match's outcome
-        delete outcomes[matchId];
-      } else {
-        outcomes[matchId] = result;
-        btn.classList.add("admin-result-btn--active");
-      }
+      btn.closest(".admin-result-btns").querySelectorAll(".admin-result-btn").forEach(b => b.classList.remove("admin-result-btn--active"));
+      if (isAlreadyActive) { delete outcomes[matchId]; }
+      else { outcomes[matchId] = result; btn.classList.add("admin-result-btn--active"); }
+    };
+
+    window.saveOutcomes = async function() {
+      const status = document.getElementById("saveStatus");
+      status.textContent = "Saving…";
+      try {
+        await setDoc(doc(db, "admin", "outcomes"), { results: outcomes });
+        status.textContent = "✓ Saved!";
+        setTimeout(() => status.textContent = "", 3000);
+      } catch(e) { status.textContent = "✗ Save failed."; }
     };
 
     window.saveStats = async function() {
@@ -176,16 +327,177 @@
         await setDoc(doc(db, "admin", "stats"), { goals, yellows, reds });
         status.textContent = "✓ Saved!";
         setTimeout(() => status.textContent = "", 3000);
-      } catch(e) {
-        status.textContent = "✗ Save failed.";
-      }
+      } catch(e) { status.textContent = "✗ Save failed."; }
     };
 
-    window.saveOutcomes = async function() {
-      const status = document.getElementById("saveStatus");
+    // ─── Knockout Admin Bracket ──────────────────────────────────
+    // Build the full visual bracket:
+    // R32 (editable) → R16 (derived from picks) → QF → SF → Final
+    // Each match also has outcome buttons once both teams are known.
+
+    function getKoTeamName(slotId) {
+      return koTeams[slotId]?.name || "";
+    }
+
+    // For a later-round match, resolve teams from admin outcomes propagation
+    function resolveKoTeamFromOutcome(matchId) {
+      // Walk backward through outcomes
+      const wire = KO_BRACKET_WIRE[matchId]; // no, we need reverse
+      // Find which match feeds into this slot
+      const feeder = Object.entries(KO_BRACKET_WIRE).find(([srcId, v]) => v.feedsInto === matchId);
+      if (!feeder) return null;
+      // Not applicable for admin — admin sets r32 teams, outcomes propagate forward
+      return null;
+    }
+
+    function getOutcomeWinner(matchId) {
+      const winnerName = koOutcomes[matchId];
+      if (!winnerName) return null;
+      const flag = ALL_TEAMS[winnerName] || null;
+      return { name: winnerName, flag };
+    }
+
+    // Resolve what team occupies each "slot" in later rounds based on outcomes
+    function resolveSlotFromOutcomes(matchId, slot) {
+      // Find which r32/earlier match feeds into this matchId as 'slot'
+      const feederEntry = Object.entries(KO_BRACKET_WIRE).find(([, v]) => v.feedsInto === matchId && v.asSlot === slot);
+      if (!feederEntry) return null;
+      const feederMatchId = feederEntry[0];
+      return getOutcomeWinner(feederMatchId);
+    }
+
+    function renderKoAdmin() {
+      const container = document.getElementById("koAdminBracket");
+
+      const rounds = [
+        { id: "r32", label: "Round of 32",   matches: KO_ALL_MATCHES.filter(m => m.round === "r32"), editable: true  },
+        { id: "r16", label: "Round of 16",   matches: KO_ALL_MATCHES.filter(m => m.round === "r16"), editable: false },
+        { id: "qf",  label: "Quarterfinals", matches: KO_ALL_MATCHES.filter(m => m.round === "qf"),  editable: false },
+        { id: "sf",  label: "Semifinals",    matches: KO_ALL_MATCHES.filter(m => m.round === "sf"),  editable: false },
+        { id: "f",   label: "Final",         matches: KO_ALL_MATCHES.filter(m => m.round === "f"),   editable: false },
+      ];
+
+      let html = '<div class="ko-admin-grid">';
+
+      rounds.forEach((round, ri) => {
+        html += `<div class="ko-admin-round"><div class="ko-admin-round-label">${round.label}</div>`;
+
+        round.matches.forEach(m => {
+          const isFinal = m.round === "f";
+
+          if (round.editable) {
+            // R32: editable text inputs for team names
+            const nameA = getKoTeamName(m.slotA);
+            const nameB = getKoTeamName(m.slotB);
+            const curOutcome = koOutcomes[m.matchId];
+
+            const outcomeButtons = (nameA && nameB) ? `
+              <div class="ko-outcome-row">
+                <button class="ko-outcome-btn ${curOutcome === nameA ? "ko-outcome-btn--active" : ""}"
+                        onclick="setKoOutcome('${m.matchId}', '${nameA.replace(/'/g,"\\'")}', this)"
+                        title="${nameA} wins">${nameA}</button>
+                <button class="ko-outcome-btn ${curOutcome === nameB ? "ko-outcome-btn--active" : ""}"
+                        onclick="setKoOutcome('${m.matchId}', '${nameB.replace(/'/g,"\\'")}', this)"
+                        title="${nameB} wins">${nameB}</button>
+              </div>` : "";
+
+            html += `
+              <div class="ko-admin-match ${isFinal ? "ko-admin-match--final" : ""}">
+                <div class="ko-admin-slot">
+                  <label>A</label>
+                  <input class="ko-admin-input" type="text" placeholder="Team name"
+                         value="${nameA}"
+                         onchange="setKoTeam('${m.slotA}', this.value)"
+                         list="teamList" />
+                </div>
+                <div class="ko-admin-slot">
+                  <label>B</label>
+                  <input class="ko-admin-input" type="text" placeholder="Team name"
+                         value="${nameB}"
+                         onchange="setKoTeam('${m.slotB}', this.value)"
+                         list="teamList" />
+                </div>
+                ${outcomeButtons}
+              </div>
+            `;
+          } else {
+            // Later rounds: show derived teams from outcomes + outcome buttons
+            const teamA = resolveSlotFromOutcomes(m.matchId, "a");
+            const teamB = resolveSlotFromOutcomes(m.matchId, "b");
+            const nameA = teamA?.name || "TBD";
+            const nameB = teamB?.name || "TBD";
+            const curOutcome = koOutcomes[m.matchId];
+
+            const outcomeButtons = (teamA && teamB) ? `
+              <div class="ko-outcome-row">
+                <button class="ko-outcome-btn ${curOutcome === nameA ? "ko-outcome-btn--active" : ""}"
+                        onclick="setKoOutcome('${m.matchId}', '${nameA.replace(/'/g,"\\'")}', this)">${nameA}</button>
+                <button class="ko-outcome-btn ${curOutcome === nameB ? "ko-outcome-btn--active" : ""}"
+                        onclick="setKoOutcome('${m.matchId}', '${nameB.replace(/'/g,"\\'")}', this)">${nameB}</button>
+              </div>` : "";
+
+            html += `
+              <div class="ko-admin-match ${isFinal ? "ko-admin-match--final" : ""}">
+                <div class="ko-admin-derived ${teamA ? "" : ""}" style="${teamA ? "color:var(--white);font-weight:600;" : ""}">
+                  ${teamA?.flag ? `<img class="ko-flag" src="${teamA.flag}" alt="" style="width:14px;height:10px;object-fit:cover;border-radius:1px;margin-right:4px;">` : ""}${nameA}
+                </div>
+                <div class="ko-admin-derived" style="${teamB ? "color:var(--white);font-weight:600;" : ""}; border-top:1px solid rgba(255,255,255,0.05);">
+                  ${teamB?.flag ? `<img class="ko-flag" src="${teamB.flag}" alt="" style="width:14px;height:10px;object-fit:cover;border-radius:1px;margin-right:4px;">` : ""}${nameB}
+                </div>
+                ${outcomeButtons}
+              </div>
+            `;
+          }
+        });
+
+        html += `</div>`;
+        if (ri < rounds.length - 1) {
+          html += `<div class="ko-admin-connector"></div>`;
+        }
+      });
+
+      html += `</div>`;
+
+      // Team datalist for autocomplete
+      const teamOptions = Object.keys(ALL_TEAMS).map(n => `<option value="${n}">`).join("");
+      html += `<datalist id="teamList">${teamOptions}</datalist>`;
+
+      container.innerHTML = html;
+    }
+
+    window.setKoTeam = function(slotId, name) {
+      const trimmed = name.trim();
+      if (!trimmed) {
+        delete koTeams[slotId];
+      } else {
+        const flag = ALL_TEAMS[trimmed] || null;
+        koTeams[slotId] = { name: trimmed, flag };
+      }
+      // Re-render so outcome buttons appear when both filled
+      renderKoAdmin();
+    };
+
+    window.setKoOutcome = function(matchId, winnerName, btn) {
+      const isActive = btn.classList.contains("ko-outcome-btn--active");
+      btn.closest(".ko-outcome-row").querySelectorAll(".ko-outcome-btn").forEach(b => b.classList.remove("ko-outcome-btn--active"));
+      if (isActive) {
+        delete koOutcomes[matchId];
+      } else {
+        koOutcomes[matchId] = winnerName;
+        btn.classList.add("ko-outcome-btn--active");
+      }
+      // Re-render to propagate into next round display
+      renderKoAdmin();
+    };
+
+    window.saveKnockout = async function() {
+      const status = document.getElementById("koSaveStatus");
       status.textContent = "Saving…";
       try {
-        await setDoc(doc(db, "admin", "outcomes"), { results: outcomes });
+        await setDoc(doc(db, "admin", "knockout"), {
+          teams:    koTeams,
+          outcomes: koOutcomes,
+        });
         status.textContent = "✓ Saved!";
         setTimeout(() => status.textContent = "", 3000);
       } catch(e) {

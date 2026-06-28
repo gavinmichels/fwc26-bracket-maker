@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/main.css" />
   <style>
+    /* ── Rank badges ── */
     .team-name-ranked { display:inline-flex; align-items:center; gap:4px; }
     .rank-badge {
       display:inline-flex; align-items:center; justify-content:center;
@@ -15,12 +16,252 @@
       font-size:10px; font-weight:700; font-family:'Inter',sans-serif;
       flex-shrink:0; line-height:1;
     }
-    .rank-badge--favorite  { background:#4FC3F7; color:#fff; }
-    .rank-badge--underdog  { background:#9B72CF; color:#fff; }
-    .rank-badge--even      { background:#888; color:#fff; }
+    .rank-badge--favorite { background:#4FC3F7; color:#fff; }
+    .rank-badge--underdog { background:#9B72CF; color:#fff; }
+    .rank-badge--even     { background:#888; color:#fff; }
     .pts-chip {
       font-size:0.72rem; font-weight:700; padding:2px 7px;
       border-radius:10px; background:rgba(0,0,0,0.07);
+    }
+
+    /* ══════════════════════════════════════════════════
+       KNOCKOUT BRACKET STYLES
+    ══════════════════════════════════════════════════ */
+    .ko-wrapper {
+      padding: 1rem 0.5rem 4rem;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Horizontal scroll bracket canvas */
+    .ko-bracket {
+      display: flex;
+      gap: 0;
+      align-items: stretch;
+      min-width: max-content;
+      padding: 1rem 0.5rem 1rem;
+    }
+
+    /* One column per round */
+    .ko-round {
+      display: flex;
+      flex-direction: column;
+      min-width: 160px;
+      max-width: 180px;
+    }
+
+    .ko-round-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-align: center;
+      padding: 0 0.5rem 0.75rem;
+      white-space: nowrap;
+    }
+
+    /* Spacer column for connector lines */
+    .ko-connector-col {
+      display: flex;
+      flex-direction: column;
+      width: 28px;
+      flex-shrink: 0;
+      padding-top: 28px; /* aligns with card area below label */
+    }
+
+    /* Each match card slot — occupies proportional vertical space */
+    .ko-slot {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 6px;
+      position: relative;
+    }
+
+    /* Connector lines between rounds */
+    .ko-connector-pair {
+      flex: 2; /* same height as two ko-slots */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .ko-connector-pair::before,
+    .ko-connector-pair::after {
+      content: '';
+      position: absolute;
+      border-color: rgba(255,255,255,0.1);
+      border-style: solid;
+    }
+    /* Vertical bar on left connecting two slots */
+    .ko-connector-pair::before {
+      left: 0; top: 25%; bottom: 25%;
+      width: 0;
+      border-width: 0 1px 0 0;
+    }
+    /* Horizontal tick to the right */
+    .ko-connector-pair::after {
+      left: 0; top: 50%;
+      width: 100%; height: 0;
+      border-width: 1px 0 0 0;
+      transform: translateY(-0.5px);
+    }
+
+    /* The actual match card */
+    .ko-match-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      overflow: hidden;
+      width: 100%;
+      transition: border-color 0.2s;
+    }
+    .ko-match-card:hover { border-color: rgba(255,255,255,0.18); }
+
+    .ko-team-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      padding: 7px 9px;
+      background: transparent;
+      border: none;
+      color: var(--white);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.15s;
+      position: relative;
+    }
+    .ko-team-btn:first-child {
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .ko-team-btn:hover:not(:disabled) {
+      background: rgba(255,255,255,0.07);
+    }
+    .ko-team-btn:disabled {
+      cursor: default;
+      opacity: 0.55;
+    }
+
+    /* TBD / empty slot */
+    .ko-team-btn.ko-tbd {
+      color: var(--muted);
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    /* Selected / picked state */
+    .ko-team-btn.ko-picked {
+      background: rgba(29,185,84,0.15);
+      color: #5DDB8B;
+    }
+    .ko-team-btn.ko-picked::after {
+      content: '✓';
+      position: absolute;
+      right: 8px;
+      font-size: 0.7rem;
+      color: var(--green);
+    }
+
+    /* Correct / wrong outcome states */
+    .ko-team-btn.ko-correct {
+      background: rgba(39,174,96,0.2);
+      color: #5DDB8B;
+    }
+    .ko-team-btn.ko-wrong {
+      background: rgba(231,76,60,0.12);
+      color: #FF7070;
+      text-decoration: line-through;
+    }
+    .ko-team-btn.ko-correct::after {
+      content: '✓';
+      position: absolute;
+      right: 8px;
+      font-size: 0.7rem;
+      color: var(--green);
+    }
+
+    /* Flag inside match card */
+    .ko-flag {
+      width: 18px;
+      height: 13px;
+      object-fit: cover;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .ko-team-name {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* Final / Champion card */
+    .ko-match-card--final {
+      border-color: rgba(240,192,64,0.3);
+      background: rgba(240,192,64,0.04);
+    }
+    .ko-match-card--final .ko-team-btn.ko-picked {
+      background: rgba(240,192,64,0.2);
+      color: var(--gold);
+    }
+    .ko-match-card--final .ko-team-btn.ko-picked::after {
+      color: var(--gold);
+    }
+    .ko-round-label--final { color: var(--gold); }
+
+    /* Submit / locked banner */
+    .ko-submit-bar {
+      position: sticky;
+      bottom: 0;
+      z-index: 50;
+      background: rgba(13,27,42,0.95);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .ko-submit-info {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .ko-submit-info strong {
+      color: var(--white);
+      font-size: 1rem;
+    }
+    .ko-locked-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--gold);
+      background: rgba(240,192,64,0.1);
+      border: 1px solid rgba(240,192,64,0.25);
+      border-radius: 999px;
+      padding: 0.35rem 0.85rem;
+    }
+
+    /* Mobile scroll hint */
+    .ko-scroll-hint {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--muted);
+      padding: 0.5rem 0 0;
+      display: none;
+    }
+    @media (max-width: 700px) {
+      .ko-scroll-hint { display: block; }
+      .ko-round { min-width: 130px; }
     }
   </style>
 </head>
@@ -42,87 +283,147 @@
   </main>
 
   <script src="data/matches.js"></script>
+  <script src="data/knockout_matches.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { FIREBASE_CONFIG } from "./js/firebase-config.js";
 
     const app = initializeApp(FIREBASE_CONFIG);
-    const db = getFirestore(app);
+    const db  = getFirestore(app);
     const root = document.getElementById("bracketRoot");
 
     const bracketId = sessionStorage.getItem("activeBracketId");
     const isOwner   = sessionStorage.getItem("bracketIsOwner") === "true";
-    if (!bracketId) {
-      window.location.href = "index.html";
-    }
+    if (!bracketId) { window.location.href = "index.html"; }
 
+    // ─── State ───────────────────────────────────────────────────
+    let bracketData   = null;
+    let groupOutcomes = {};
+    let koOutcomes    = {};   // admin-set knockout results
+    let koTeams       = {};   // admin-set team slots { slotId: { name, flag } }
+    let koPicks       = {};   // user's knockout picks { matchId: "teamName" }
+    let koLocked      = false;
+    let accentColor   = "#1A5276";
+    let activeTab     = "group";
+
+    // ─── Load ────────────────────────────────────────────────────
     async function load() {
       try {
-        const snap = await getDoc(doc(db, "brackets", bracketId));
-        if (!snap.exists()) {
+        const [bSnap, adminSnap, koSnap] = await Promise.all([
+          getDoc(doc(db, "brackets", bracketId)),
+          getDoc(doc(db, "admin", "outcomes")),
+          getDoc(doc(db, "admin", "knockout")),
+        ]);
+
+        if (!bSnap.exists()) {
           root.innerHTML = `<div class="form-card"><p class="error-msg" style="display:block;">Bracket not found.</p><a href="index.html" class="btn btn-primary" style="margin-top:1rem;">← Home</a></div>`;
           return;
         }
 
-        const data = snap.data();
-        const color = data.color || "#1A5276";
+        bracketData   = bSnap.data();
+        groupOutcomes = adminSnap.exists() ? adminSnap.data().results || {} : {};
+        accentColor   = bracketData.color || "#1A5276";
 
-        // Load admin outcomes
-        const adminSnap = await getDoc(doc(db, "admin", "outcomes"));
-        const outcomes = adminSnap.exists() ? adminSnap.data().results || {} : {};
+        if (koSnap.exists()) {
+          const kd = koSnap.data();
+          koTeams    = kd.teams    || {};
+          koOutcomes = kd.outcomes || {};
+        }
 
-        document.getElementById("headerOwner").textContent = data.bracketName;
-        document.querySelector(".bracket-page").style.setProperty("--accent", color);
+        koPicks  = bracketData.koPicks  || {};
+        koLocked = bracketData.koLocked || false;
 
-        // Score computation
-        let correct = 0, total = 0, points = 0;
-        GROUP_STAGE_MATCHES.forEach(m => {
-          const outcome = outcomes[m.id];
-          const pick = data.picks[m.id];
-          if (outcome) {
-            total++;
-            if (pick === outcome) correct++;
-            points += getMatchPoints(m, pick, outcome);
-          }
-        });
-        const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+        document.getElementById("headerOwner").textContent = bracketData.bracketName;
+        document.querySelector(".bracket-page").style.setProperty("--accent", accentColor);
 
-        renderBracket(data, outcomes, correct, total, points, accuracy, color, isOwner);
+        renderShell();
+        renderGroupTab();
       } catch(e) {
+        console.error(e);
         root.innerHTML = `<div class="form-card"><p class="error-msg" style="display:block;">Failed to load. Try again.</p></div>`;
       }
     }
 
+    // ─── Shell (hero + tabs) ─────────────────────────────────────
+    function renderShell() {
+      let correct = 0, total = 0, points = 0;
+      GROUP_STAGE_MATCHES.forEach(m => {
+        const outcome = groupOutcomes[m.id];
+        const pick    = bracketData.picks?.[m.id];
+        if (outcome) {
+          total++;
+          if (pick === outcome) correct++;
+          points += getMatchPoints(m, pick, outcome);
+        }
+      });
+      const { total: koPts } = getKnockoutPoints(koPicks, koOutcomes);
+      points += koPts;
+      const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+      root.innerHTML = `
+        <div class="bracket-hero" style="background: linear-gradient(135deg, ${accentColor}22, ${accentColor}08);">
+          <div class="bracket-hero-info">
+            <div class="bracket-owner-tag">⚽ ${bracketData.owner}</div>
+            <h1 class="bracket-name" style="color:${accentColor};">${bracketData.bracketName}</h1>
+            ${isOwner ? `<a href="create.html" class="btn btn-primary" style="background:${accentColor}; margin-top:0.75rem; display:inline-block; padding:0.5rem 1.25rem; font-size:0.85rem;">✏️ Group Picks</a>` : ""}
+          </div>
+          <div class="bracket-score-block">
+            <div class="score-big" style="color:${accentColor};">${points}</div>
+            <div class="score-label">${correct}/${total} group correct &nbsp;·&nbsp; ${accuracy}%</div>
+            <div class="score-goals-guess">Goals: <strong>${bracketData.totalGoalsGuess ?? "—"}</strong></div>
+            <div class="score-goals-guess">🟨 <strong>${bracketData.yellowCardsGuess ?? "—"}</strong> &nbsp;·&nbsp; 🟥 <strong>${bracketData.redCardsGuess ?? "—"}</strong></div>
+          </div>
+        </div>
+
+        <div class="bracket-tabs" id="bracketTabs">
+          <button class="bracket-tab ${activeTab === 'group' ? 'bracket-tab--active' : ''}"
+                  id="tabGroup" onclick="switchTab('group')"
+                  style="--tab-color:${accentColor}">Group Stage</button>
+          <button class="bracket-tab ${activeTab === 'knockout' ? 'bracket-tab--active' : ''}"
+                  id="tabKnockout" onclick="switchTab('knockout')"
+                  style="--tab-color:${accentColor}">Knockout</button>
+        </div>
+
+        <div id="tabContent"></div>
+      `;
+    }
+
+    // ─── Tab switcher ────────────────────────────────────────────
+    window.switchTab = function(tab) {
+      activeTab = tab;
+      document.querySelectorAll(".bracket-tab").forEach(t => t.classList.remove("bracket-tab--active"));
+      document.getElementById(tab === "group" ? "tabGroup" : "tabKnockout").classList.add("bracket-tab--active");
+      if (tab === "group")    renderGroupTab();
+      if (tab === "knockout") renderKnockoutTab();
+    };
+
+    // ════════════════════════════════════════════════════════════
+    //  GROUP STAGE TAB
+    // ════════════════════════════════════════════════════════════
     function rankBadge(teamName, opponentName) {
       const rank = TEAM_RANK[teamName] ?? "?";
       const role = getTeamRole(teamName, opponentName);
-      const badgeClass = role === "underdog" ? "rank-badge rank-badge--underdog"
-                       : role === "favorite" ? "rank-badge rank-badge--favorite"
-                       : "rank-badge rank-badge--even";
-      return `<span class="${badgeClass}" title="FIFA rank #${rank}">${rank}</span>`;
+      const cls  = role === "underdog" ? "rank-badge rank-badge--underdog"
+                 : role === "favorite" ? "rank-badge rank-badge--favorite"
+                 : "rank-badge rank-badge--even";
+      return `<span class="${cls}" title="FIFA rank #${rank}">${rank}</span>`;
     }
 
-    function renderBracket(data, outcomes, correct, total, points, accuracy, color, isOwner) {
+    function renderGroupTab() {
       const groups = ["A","B","C","D","E","F","G","H","I","J","K","L"];
-
       const groupSections = groups.map(g => {
         const matches = GROUP_STAGE_MATCHES.filter(m => m.group === g);
         const rows = matches.map(m => {
-          const pick = data.picks[m.id];
-          const outcome = outcomes[m.id];
-          const isScored = !!outcome;
+          const pick      = bracketData.picks?.[m.id];
+          const outcome   = groupOutcomes[m.id];
+          const isScored  = !!outcome;
           const isCorrect = isScored && pick === outcome;
           const isWrong   = isScored && pick !== outcome;
-          const pts = getMatchPoints(m, pick, outcome);
+          const pts       = getMatchPoints(m, pick, outcome);
 
-          const pickLabel = !pick ? "—" :
-            pick === "draw" ? "Draw" :
-            pick === "home" ? m.home.name : m.away.name;
-
-          const resultLabel = !outcome ? "Pending" :
-            outcome === "draw" ? "Draw" :
-            outcome === "home" ? m.home.name : m.away.name;
+          const pickLabel   = !pick ? "—" : pick === "draw" ? "Draw" : pick === "home" ? m.home.name : m.away.name;
+          const resultLabel = !outcome ? "Pending" : outcome === "draw" ? "Draw" : outcome === "home" ? m.home.name : m.away.name;
 
           return `
             <div class="match-row ${isCorrect ? "match-row--correct" : ""} ${isWrong ? "match-row--wrong" : ""}">
@@ -138,7 +439,7 @@
                   ${isCorrect ? "✓" : isWrong ? "✗" : ""} ${pickLabel}
                 </span>
                 ${isScored ? `<span class="result-chip">Result: ${resultLabel}</span>` : ""}
-                ${isCorrect ? `<span class="pts-chip" style="color:${color};">+${pts}pts</span>` : ""}
+                ${isCorrect ? `<span class="pts-chip" style="color:${accentColor};">+${pts}pts</span>` : ""}
               </div>
             </div>
           `;
@@ -146,47 +447,268 @@
 
         return `
           <div class="group-section">
-            <div class="group-header" style="border-left: 3px solid ${color};">
-              Group ${g}
-            </div>
+            <div class="group-header" style="border-left: 3px solid ${accentColor};">Group ${g}</div>
             ${rows}
           </div>
         `;
       }).join("");
 
-      root.innerHTML = `
-        <div class="bracket-hero" style="background: linear-gradient(135deg, ${color}22, ${color}08);">
-          <div class="bracket-hero-info">
-            <div class="bracket-owner-tag">⚽ ${data.owner}</div>
-            <h1 class="bracket-name" style="color:${color};">${data.bracketName}</h1>
-            ${isOwner ? `<a href="create.html" class="btn btn-primary" style="background:${color}; margin-top:0.75rem; display:inline-block; padding:0.5rem 1.25rem; font-size:0.85rem;">✏️ Choices</a>` : ""}
-          </div>
-          <div class="bracket-score-block">
-            <div class="score-big" style="color:${color};">${points}</div>
-            <div class="score-label">${correct}/${total} correct &nbsp;·&nbsp; ${accuracy}%</div>
-            <div class="score-goals-guess">Goals: <strong>${data.totalGoalsGuess ?? "—"}</strong></div>
-            <div class="score-goals-guess">🟨 <strong>${data.yellowCardsGuess ?? "—"}</strong> &nbsp;·&nbsp; 🟥 <strong>${data.redCardsGuess ?? "—"}</strong></div>
-          </div>
-        </div>
-
-        <div class="bracket-tabs" id="bracketTabs">
-          <button class="bracket-tab bracket-tab--active" onclick="switchTab('group', this)" style="--tab-color:${color}">Group Stage</button>
-          <button class="bracket-tab bracket-tab--disabled" title="Available after group stage">Round of 32</button>
-          <button class="bracket-tab bracket-tab--disabled" title="Available after group stage">Knockout</button>
-        </div>
-
-        <div class="bracket-content" id="bracketContent">
-          <div class="groups-grid">
-            ${groupSections}
-          </div>
+      document.getElementById("tabContent").innerHTML = `
+        <div class="bracket-content">
+          <div class="groups-grid">${groupSections}</div>
         </div>
       `;
     }
 
-    window.switchTab = function(tab, el) {
-      document.querySelectorAll(".bracket-tab").forEach(t => t.classList.remove("bracket-tab--active"));
-      el.classList.add("bracket-tab--active");
+    // ════════════════════════════════════════════════════════════
+    //  KNOCKOUT TAB
+    // ════════════════════════════════════════════════════════════
+
+    // Build a resolved team object from slot id
+    function getTeamFromSlot(slotId) {
+      return koTeams[slotId] || null; // { name, flag } or null
+    }
+
+    // For a given matchId, get the two teams (resolved from slot or propagated from picks)
+    // Returns { a: {name,flag}|null, b: {name,flag}|null }
+    function getMatchTeams(matchId) {
+      const m = KO_ALL_MATCHES.find(x => x.matchId === matchId);
+      if (!m) return { a: null, b: null };
+
+      if (m.round === "r32") {
+        return {
+          a: getTeamFromSlot(m.slotA),
+          b: getTeamFromSlot(m.slotB),
+        };
+      }
+
+      // For later rounds, find which r32/r16/etc matches feed into this one
+      const feedersA = Object.entries(KO_BRACKET_WIRE).filter(([, v]) => v.feedsInto === matchId && v.asSlot === "a");
+      const feedersB = Object.entries(KO_BRACKET_WIRE).filter(([, v]) => v.feedsInto === matchId && v.asSlot === "b");
+
+      return {
+        a: resolveWinner(feedersA[0]?.[0]),
+        b: resolveWinner(feedersB[0]?.[0]),
+      };
+    }
+
+    // Resolve who the user picked to win a given matchId (propagated through picks)
+    function resolveWinner(matchId) {
+      if (!matchId) return null;
+      const pickedName = koPicks[matchId];
+      if (!pickedName) return null;
+      // Find team object by name from koTeams values
+      const entry = Object.values(koTeams).find(t => t && t.name === pickedName);
+      return entry || { name: pickedName, flag: null };
+    }
+
+    // Count how many r32 matches have both teams filled in (admin set)
+    function koTeamsReady() {
+      return KO_R32_MATCHES.every(m => koTeams[m.slotA] && koTeams[m.slotB]);
+    }
+
+    // Count total picks made vs required (31 matches)
+    function countPicks() {
+      return KO_ALL_MATCHES.filter(m => koPicks[m.matchId]).length;
+    }
+
+    // Pick a team for a match — cascades: clear downstream picks if changed
+    window.koPick = function(matchId, teamName) {
+      if (koLocked) return;
+      if (koPicks[matchId] === teamName) return; // already picked
+
+      const oldPick = koPicks[matchId];
+      koPicks[matchId] = teamName;
+
+      // If pick changed, clear all downstream that depended on old winner
+      if (oldPick && oldPick !== teamName) {
+        clearDownstream(matchId);
+        koPicks[matchId] = teamName; // re-set after clear
+      }
+
+      renderKnockoutTab();
     };
+
+    function clearDownstream(matchId) {
+      const wire = KO_BRACKET_WIRE[matchId];
+      if (!wire) return;
+      const nextMatchId = wire.feedsInto;
+      delete koPicks[nextMatchId];
+      clearDownstream(nextMatchId);
+    }
+
+    // Submit and lock knockout picks
+    window.submitKoPicks = async function() {
+      if (koLocked) return;
+      const total = KO_ALL_MATCHES.length;
+      const made  = countPicks();
+      if (made < total) {
+        alert(`Please pick all ${total} matches before submitting. You've picked ${made} so far.`);
+        return;
+      }
+      try {
+        await updateDoc(doc(db, "brackets", bracketId), {
+          koPicks:  koPicks,
+          koLocked: true,
+        });
+        koLocked = true;
+        renderKnockoutTab();
+      } catch(e) {
+        alert("Failed to save. Please try again.");
+      }
+    };
+
+    function renderKnockoutTab() {
+      const content = document.getElementById("tabContent");
+      if (!content) return;
+
+      const ready = koTeamsReady();
+      const total = KO_ALL_MATCHES.length;
+      const made  = countPicks();
+      const { total: koPts, breakdown } = getKnockoutPoints(koPicks, koOutcomes);
+
+      // ── Not yet set up by admin ──
+      if (!ready) {
+        content.innerHTML = `
+          <div class="loading-state" style="padding:4rem 1rem;">
+            <div style="font-size:2.5rem;">🏆</div>
+            <p style="font-weight:700; color:var(--white); margin-top:0.5rem;">Knockout bracket coming soon</p>
+            <p style="color:var(--muted); font-size:0.85rem; margin-top:0.25rem;">The admin will set the advancing teams after the group stage.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const rounds = [
+        { id: "r32", label: "Round of 32",   matches: KO_ALL_MATCHES.filter(m => m.round === "r32") },
+        { id: "r16", label: "Round of 16",   matches: KO_ALL_MATCHES.filter(m => m.round === "r16") },
+        { id: "qf",  label: "Quarterfinals", matches: KO_ALL_MATCHES.filter(m => m.round === "qf")  },
+        { id: "sf",  label: "Semifinals",    matches: KO_ALL_MATCHES.filter(m => m.round === "sf")  },
+        { id: "f",   label: "Final",         matches: KO_ALL_MATCHES.filter(m => m.round === "f")   },
+      ];
+
+      // Build columns HTML
+      let bracketHTML = "";
+      rounds.forEach((round, ri) => {
+        const isFinal = round.id === "f";
+        const labelClass = isFinal ? "ko-round-label ko-round-label--final" : "ko-round-label";
+
+        // Match cards for this round
+        const matchCards = round.matches.map(m => {
+          const { a, b } = getMatchTeams(m.matchId);
+          const pick      = koPicks[m.matchId];
+          const outcome   = koOutcomes[m.matchId];
+          const pts       = breakdown?.[m.matchId] || 0;
+
+          function teamBtn(team, slot) {
+            if (!team) {
+              return `<button class="ko-team-btn ko-tbd" disabled>TBD</button>`;
+            }
+            const isPicked  = pick === team.name;
+            const hasOutcome = !!outcome;
+            const isCorrect  = hasOutcome && outcome === team.name && pick === team.name;
+            const isWrong    = hasOutcome && pick === team.name && outcome !== team.name;
+            const isWinner   = hasOutcome && outcome === team.name;
+
+            let cls = "ko-team-btn";
+            if (isCorrect)      cls += " ko-correct";
+            else if (isWrong)   cls += " ko-wrong";
+            else if (isPicked)  cls += " ko-picked";
+
+            const disabled = koLocked || hasOutcome ? "disabled" : "";
+            const onclick  = (!koLocked && !hasOutcome) ? `onclick="koPick('${m.matchId}', '${team.name.replace(/'/g, "\\'")}')"` : "";
+
+            const flagImg = team.flag ? `<img class="ko-flag" src="${team.flag}" alt="${team.name}" />` : "";
+            const ptsBadge = isCorrect && pts > 0 ? `<span style="font-size:0.6rem;color:var(--green);margin-left:auto;flex-shrink:0;">+${pts}</span>` : "";
+
+            return `
+              <button class="${cls}" ${disabled} ${onclick}>
+                ${flagImg}
+                <span class="ko-team-name">${team.name}</span>
+                ${ptsBadge}
+              </button>
+            `;
+          }
+
+          const isFinalCard = isFinal;
+          return `
+            <div class="ko-slot">
+              <div class="ko-match-card ${isFinalCard ? "ko-match-card--final" : ""}">
+                ${teamBtn(a, "a")}
+                ${teamBtn(b, "b")}
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        // Connector column (between rounds, not after last)
+        const connectorHTML = ri < rounds.length - 1 ? (() => {
+          const nextCount  = rounds[ri + 1].matches.length;
+          const pairs = Array(nextCount).fill(0).map(() => `<div class="ko-connector-pair"></div>`).join("");
+          return `<div class="ko-connector-col">${pairs}</div>`;
+        })() : "";
+
+        bracketHTML += `
+          <div class="ko-round">
+            <div class="${labelClass}">${round.label}</div>
+            ${matchCards}
+          </div>
+          ${connectorHTML}
+        `;
+      });
+
+      // Submit / locked bar (only for owners)
+      let submitBar = "";
+      if (isOwner) {
+        if (koLocked) {
+          submitBar = `
+            <div class="ko-submit-bar">
+              <div class="ko-submit-info">
+                Knockout picks locked · <strong>+${koPts} pts</strong> earned so far
+              </div>
+              <span class="ko-locked-badge">🔒 Locked</span>
+            </div>
+          `;
+        } else {
+          submitBar = `
+            <div class="ko-submit-bar">
+              <div class="ko-submit-info">
+                <strong>${made}</strong> / ${total} picks made
+                ${made === total ? " — ready to submit!" : ""}
+              </div>
+              <button class="btn btn-primary" onclick="submitKoPicks()"
+                style="${made < total ? "opacity:0.55;" : ""}">
+                Lock In Picks
+              </button>
+            </div>
+          `;
+        }
+      } else {
+        // Viewer — show locked status
+        if (koLocked) {
+          submitBar = `
+            <div class="ko-submit-bar">
+              <div class="ko-submit-info">Knockout picks submitted · <strong>+${koPts} pts</strong></div>
+              <span class="ko-locked-badge">🔒 Locked</span>
+            </div>
+          `;
+        } else {
+          submitBar = `
+            <div class="ko-submit-bar">
+              <div class="ko-submit-info" style="color:var(--muted);">Knockout picks not yet submitted</div>
+            </div>
+          `;
+        }
+      }
+
+      content.innerHTML = `
+        <div class="ko-wrapper">
+          <p class="ko-scroll-hint">← Scroll to see full bracket →</p>
+          <div class="ko-bracket">${bracketHTML}</div>
+        </div>
+        ${submitBar}
+      `;
+    }
 
     load();
   </script>
