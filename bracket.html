@@ -24,6 +24,23 @@
       border-radius:10px; background:rgba(0,0,0,0.07);
     }
 
+    /* Bonus tags in hero */
+    .bracket-bonus-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 6px;
+    }
+    .bracket-bonus-tag {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--gold);
+      background: rgba(240,192,64,0.12);
+      border-radius: 6px;
+      padding: 2px 7px;
+      white-space: nowrap;
+    }
+
     /* ══════════════════════════════════════════════════
        KNOCKOUT BRACKET STYLES
     ══════════════════════════════════════════════════ */
@@ -287,16 +304,18 @@
     let koTeams       = {};   // admin-set team slots { slotId: { name, flag } }
     let koPicks       = {};   // user's knockout picks { matchId: "teamName" }
     let koLocked      = false;
+    let bonuses       = {};   // admin-set tiebreaker bonuses { goals: {...}, yellows: {...}, reds: {...} }
     let accentColor   = "#1A5276";
     let activeTab     = "group";
 
     // ─── Load ────────────────────────────────────────────────────
     async function load() {
       try {
-        const [bSnap, adminSnap, koSnap] = await Promise.all([
+        const [bSnap, adminSnap, koSnap, bonusSnap] = await Promise.all([
           getDoc(doc(db, "brackets", bracketId)),
           getDoc(doc(db, "admin", "outcomes")),
           getDoc(doc(db, "admin", "knockout")),
+          getDoc(doc(db, "admin", "bonuses")),
         ]);
 
         if (!bSnap.exists()) {
@@ -314,6 +333,7 @@
           koOutcomes = kd.outcomes || {};
         }
 
+        bonuses  = bonusSnap.exists() ? bonusSnap.data() : {};
         koPicks  = bracketData.koPicks  || {};
         koLocked = bracketData.koLocked || false;
 
@@ -326,6 +346,22 @@
         console.error(e);
         root.innerHTML = `<div class="form-card"><p class="error-msg" style="display:block;">Failed to load. Try again.</p></div>`;
       }
+    }
+
+    // ─── Compute this bracket's tiebreaker bonus points & tags ───
+    function getBonusTags() {
+      const tags = [];
+      let bonusPoints = 0;
+      for (const [key, bval] of Object.entries(bonuses)) {
+        if (!bval) continue;
+        const emoji = key === "goals" ? "⚽" : key === "yellows" ? "🟨" : "🟥";
+        const isWinner = (bval.bracketId1 === bracketId || bval.bracketId2 === bracketId);
+        if (isWinner && bval.pts > 0) {
+          bonusPoints += bval.pts;
+          tags.push({ emoji, pts: bval.pts });
+        }
+      }
+      return { bonusPoints, tags };
     }
 
     // ─── Shell (hero + tabs) ─────────────────────────────────────
@@ -342,14 +378,22 @@
       });
       const { total: koPts } = getKnockoutPoints(koPicks, koOutcomes);
       points += koPts;
+
+      const { bonusPoints, tags: bonusTags } = getBonusTags();
+      points += bonusPoints;
+
       const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+      const bonusTagsHTML = bonusTags.length
+        ? `<div class="bracket-bonus-tags">${bonusTags.map(t => `<span class="bracket-bonus-tag">${t.emoji} +${t.pts}</span>`).join("")}</div>`
+        : "";
 
       root.innerHTML = `
         <div class="bracket-hero" style="background: linear-gradient(135deg, ${accentColor}22, ${accentColor}08);">
           <div class="bracket-hero-info">
             <div class="bracket-owner-tag">⚽ ${bracketData.owner}</div>
             <h1 class="bracket-name" style="color:${accentColor};">${bracketData.bracketName}</h1>
-
+            ${bonusTagsHTML}
           </div>
           <div class="bracket-score-block">
             <div class="score-big" style="color:${accentColor};">${points}</div>
@@ -436,9 +480,22 @@
         `;
       }).join("");
 
+      // Show tiebreaker bonus summary at the bottom of the group stage tab
+      const { tags: bonusTags } = getBonusTags();
+      const bonusSummaryHTML = bonusTags.length ? `
+        <div class="group-section">
+          <div class="group-header" style="border-left: 3px solid ${accentColor};">Tiebreaker Bonuses</div>
+          <div class="match-row">
+            <div class="match-row-picks" style="gap:8px;">
+              ${bonusTags.map(t => `<span class="bracket-bonus-tag">${t.emoji} +${t.pts} pts</span>`).join("")}
+            </div>
+          </div>
+        </div>
+      ` : "";
+
       document.getElementById("tabContent").innerHTML = `
         <div class="bracket-content">
-          <div class="groups-grid">${groupSections}</div>
+          <div class="groups-grid">${groupSections}${bonusSummaryHTML}</div>
         </div>
       `;
     }
@@ -640,6 +697,12 @@
         `;
       });
 
+      // Tiebreaker bonus tags to fold into the submit bar info
+      const { bonusPoints, tags: bonusTags } = getBonusTags();
+      const bonusInline = bonusTags.length
+        ? ` &nbsp;·&nbsp; ${bonusTags.map(t => `${t.emoji} +${t.pts}`).join(" &nbsp; ")}`
+        : "";
+
       // Submit / locked bar (only for owners)
       let submitBar = "";
       if (isOwner) {
@@ -647,7 +710,7 @@
           submitBar = `
             <div class="ko-submit-bar">
               <div class="ko-submit-info">
-                Knockout picks locked · <strong>+${koPts} pts</strong> earned so far
+                Knockout picks locked · <strong>+${koPts} pts</strong> earned so far${bonusInline}
               </div>
               <span class="ko-locked-badge">🔒 Locked</span>
             </div>
@@ -671,7 +734,7 @@
         if (koLocked) {
           submitBar = `
             <div class="ko-submit-bar">
-              <div class="ko-submit-info">Knockout picks submitted · <strong>+${koPts} pts</strong></div>
+              <div class="ko-submit-info">Knockout picks submitted · <strong>+${koPts} pts</strong>${bonusInline}</div>
               <span class="ko-locked-badge">🔒 Locked</span>
             </div>
           `;
